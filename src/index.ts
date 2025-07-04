@@ -22,7 +22,7 @@ import "@/index.scss";
 import AListBrowser from "@/hello.svelte";
 
 import { SettingUtils } from "./libs/setting-utils";
-import { svelteDialog } from "./libs/dialog";
+import { svelteDialog, simpleDialog } from "./libs/dialog";
 
 const STORAGE_NAME = "alist-config";
 const DOCK_TYPE = "dock_tab";
@@ -31,6 +31,7 @@ export default class PluginSample extends Plugin {
 
     private isMobile: boolean;
     private settingUtils: SettingUtils;
+    private boundHandleLinkClick: (event: MouseEvent) => Promise<void>;
 
     async onload() {
         this.data[STORAGE_NAME] = { readonlyText: "Readonly" };
@@ -94,9 +95,17 @@ export default class PluginSample extends Plugin {
             title: "AList 服务器地址",
             description: "AList 服务器的完整地址，例如：http://localhost:5244",
             action: {
-                callback: () => {
-                    let value = this.settingUtils.takeAndSave("serverUrl");
+                callback: async () => {
+                    let value = await this.settingUtils.takeAndSave("serverUrl");
+                    // URL 验证
+                    if (value && !this.validateServerUrl(value)) {
+                        showMessage("⚠️ 服务器地址格式不正确，请输入有效的URL（如：http://localhost:5244）", 3000, "error");
+                        return;
+                    }
                     console.log("Server URL:", value);
+                    if (value) {
+                        showMessage("✅ 服务器地址已保存", 2000, "info");
+                    }
                 }
             }
         });
@@ -231,11 +240,390 @@ export default class PluginSample extends Plugin {
         // 加载插件设置
         this.settingUtils.load();
         console.log(`AList 插件已加载 - frontend: ${getFrontend()}; backend: ${getBackend()}`);
+        
+        // 添加链接点击事件监听器
+        this.addLinkClickListener();
+    }
+
+    /**
+     * 添加链接点击事件监听器，拦截 [alist] 前缀的链接
+     */
+    private addLinkClickListener() {
+        // 绑定事件处理函数
+        this.boundHandleLinkClick = this.handleLinkClick.bind(this);
+        // 监听文档点击事件
+        document.addEventListener('click', this.boundHandleLinkClick, true);
+        console.log('AList link click listener added successfully');
+        
+        // 添加测试函数到全局作用域，方便调试
+        (window as any).testAListLink = () => {
+            console.log('Testing AList protocol link detection...');
+            const testLink = document.createElement('a');
+            testLink.href = 'alist://' + encodeURIComponent('/test/file.txt');
+            testLink.textContent = 'Test AList Protocol Link';
+            testLink.style.cssText = 'color: blue; text-decoration: underline; cursor: pointer; margin: 10px; display: inline-block;';
+            document.body.appendChild(testLink);
+            console.log('Test protocol link created:', testLink);
+        };
+        
+        // 添加测试自定义块的函数
+        (window as any).testAListBlock = () => {
+            console.log('Testing AList block creation...');
+            const blockContent = `{{{row
+📁 AList 文件: [测试文件.txt](alist://${encodeURIComponent('/test/测试文件.txt')})
+文件路径: \`/test/测试文件.txt\`
+点击链接预览文件
+}}}`;
+            navigator.clipboard.writeText(blockContent).then(() => {
+                console.log('Test block content copied to clipboard:', blockContent);
+                alert('测试块内容已复制到剪贴板，请粘贴到思源笔记中测试');
+            });
+        };
+    }
+
+    /**
+     * 处理链接点击事件
+     */
+    private async handleLinkClick(event: MouseEvent) {
+        const target = event.target as HTMLElement;
+        console.log('Link click detected, target:', target.tagName, target);
+        
+        let href: string | null = null;
+        let linkText: string = '';
+        
+        // 检查是否是标准的 <a> 标签
+        if (target.tagName === 'A') {
+            const linkElement = target as HTMLAnchorElement;
+            href = linkElement.getAttribute('href');
+            linkText = linkElement.textContent || '';
+        } else {
+            // 查找父级链接元素
+            const linkElement = target.closest('a');
+            if (linkElement) {
+                href = linkElement.getAttribute('href');
+                linkText = linkElement.textContent || '';
+            } else {
+                // 检查思源笔记的 data-href 属性（span 元素）
+                const dataHref = target.getAttribute('data-href');
+                if (dataHref) {
+                    href = dataHref;
+                    linkText = target.textContent || '';
+                } else {
+                    // 查找父级元素的 data-href 属性
+                    const parentWithDataHref = target.closest('[data-href]');
+                    if (parentWithDataHref) {
+                        href = parentWithDataHref.getAttribute('data-href');
+                        linkText = parentWithDataHref.textContent || '';
+                    }
+                }
+            }
+        }
+        
+        if (!href) {
+            console.log('No link href found');
+            return;
+        }
+        
+        console.log('Link href:', href);
+        
+        // 检测 alist:// 协议
+        if (!href || !href.startsWith('alist://')) {
+            console.log('Not an AList protocol link, ignoring');
+            return;
+        }
+        
+        console.log('AList protocol link detected! Intercepting...');
+        
+        // 强制阻止默认链接行为和事件冒泡
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        
+        // 解析 AList 文件路径
+        const encodedPath = href.substring(8); // 移除 alist:// 前缀
+        const filePath = decodeURIComponent(encodedPath);
+        console.log('Parsed AList file path:', filePath);
+        
+        // 验证文件路径格式
+        if (!filePath || !filePath.startsWith('/')) {
+            console.error('Invalid AList file path:', filePath);
+            showMessage(`无效的文件路径: ${filePath}`, 3000, 'error');
+            return;
+        }
+        
+        showMessage('正在预览文件...', 2000, 'info');
+        await this.previewAListFile(filePath, linkText || '文件');
+    }
+
+    /**
+     * 预览 AList 文件
+     */
+    private async previewAListFile(filePath: string, fileName: string) {
+        try {
+            const serverUrl = this.settingUtils.get("serverUrl");
+            let token = this.settingUtils.get("token");
+            
+            if (!serverUrl) {
+                throw new Error('AList 服务器地址未配置，请检查设置');
+            }
+            
+            // 验证 token 有效性，如果无效则重新登录
+            if (!token || !(await this.validateToken(serverUrl, token))) {
+                console.log('Token 无效或不存在，尝试重新登录...');
+                token = await this.refreshToken();
+                if (!token) {
+                    throw new Error('无法获取有效的访问令牌，请检查登录信息');
+                }
+            }
+            
+            // 通过 AList API 获取文件信息
+            const response = await fetch(`${serverUrl}/api/fs/get`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token
+                },
+                body: JSON.stringify({
+                    path: filePath,
+                    password: ""
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`获取文件信息失败: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            if (result.code !== 200) {
+                throw new Error(result.message || '获取文件信息失败');
+            }
+            
+            const fileInfo = result.data;
+            console.log('AList file info:', fileInfo);
+            
+            // 创建文件对象用于预览
+            const file = {
+                name: fileInfo.name,
+                size: fileInfo.size,
+                is_dir: fileInfo.is_dir,
+                modified: fileInfo.modified,
+                raw_url: fileInfo.raw_url
+            };
+            
+            // 打开预览对话框
+            this.showAListPreviewDialog(file, fileInfo.raw_url || `${serverUrl}/d${filePath}`);
+        } catch (error) {
+            console.error('预览 AList 文件失败:', error);
+            showMessage(`预览失败: ${error.message}`, 3000, 'error');
+        }
+    }
+
+    /**
+     * 显示 AList 文件预览对话框
+     */
+    private showAListPreviewDialog(file: any, fileUrl: string) {
+        // 创建预览容器
+        const container = document.createElement('div');
+        container.className = 'alist-preview-container';
+        container.style.cssText = 'width: 100%; height: 100%; display: flex; flex-direction: column;';
+        
+        // 生成预览内容
+        this.generatePreviewContent(file, fileUrl, container);
+        
+        // 使用 simpleDialog 代替 svelteDialog 避免 component.$destroy() 错误
+        const { dialog, close } = simpleDialog({
+            title: `预览: ${file.name}`,
+            width: this.isMobile ? "92vw" : "80vw",
+            height: this.isMobile ? "80vh" : "70vh",
+            ele: container,
+            callback: () => {
+                // 清理预览内容
+                if (container.parentNode) {
+                    container.parentNode.removeChild(container);
+                }
+            }
+        });
+        
+        return { dialog, close };
+    }
+
+    /**
+     * 生成预览内容
+     */
+    private generatePreviewContent(file: any, fileUrl: string, container: HTMLElement) {
+        const fileName = file.name;
+        let previewHTML = '';
+        
+        // 根据文件扩展名生成预览内容
+        if (fileName.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i)) {
+            // 图片预览
+            previewHTML = `
+                <div class="obj-box hope-stack" style="text-align: center; padding: 20px; width: 100%; height: 100%;">
+                    <img src="${fileUrl}" alt="${fileName}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
+                </div>
+            `;
+        } else if (fileName.match(/\.(mp4|webm|ogg|avi|mov)$/i)) {
+            // 视频预览
+            previewHTML = `
+                <div class="obj-box hope-stack" style="text-align: center; padding: 20px; width: 100%; height: 100%;">
+                    <video controls style="max-width: 100%; max-height: 100%;">
+                        <source src="${fileUrl}" type="video/mp4">
+                        您的浏览器不支持视频播放。
+                    </video>
+                </div>
+            `;
+        } else if (fileName.match(/\.(mp3|wav|ogg|flac|aac)$/i)) {
+            // 音频预览
+            previewHTML = `
+                <div class="obj-box hope-stack" style="text-align: center; padding: 20px;">
+                    <audio controls style="width: 100%; max-width: 500px;">
+                        <source src="${fileUrl}" type="audio/mpeg">
+                        您的浏览器不支持音频播放。
+                    </audio>
+                </div>
+            `;
+        } else if (fileName.match(/\.(pdf)$/i)) {
+            // PDF 文件预览 - 使用PDF.js确保正确预览
+            const encodedUrl = encodeURIComponent(fileUrl);
+            previewHTML = `
+                <div class="obj-box hope-stack" style="padding: 10px; width: 100%; height: 100%; flex-direction: column;">
+                    <iframe 
+                        src="https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodedUrl}" 
+                        style="width: 100%; flex: 1; border: none;"
+                        title="PDF 预览">
+                    </iframe>
+                    <div style="margin-top: 10px; text-align: center; color: #666; flex-shrink: 0;">
+                        <small>如果预览失败，请尝试 <a href="${fileUrl}" target="_blank" style="color: var(--b3-theme-primary);">直接下载文件</a> 查看</small>
+                    </div>
+                </div>
+            `;
+        } else if (fileName.match(/\.(doc|docx|xls|xlsx|ppt|pptx)$/i)) {
+            // Office 文档预览
+            const encodedUrl = encodeURIComponent(fileUrl);
+            previewHTML = `
+                <div class="obj-box hope-stack" style="padding: 10px; width: 100%; height: 100%; flex-direction: column;">
+                    <iframe 
+                        src="https://view.officeapps.live.com/op/view.aspx?src=${encodedUrl}" 
+                        style="width: 100%; flex: 1; border: none;"
+                        title="Office 文档预览">
+                    </iframe>
+                    <div style="margin-top: 10px; text-align: center; color: #666; flex-shrink: 0;">
+                        <small>如果预览失败，请尝试直接下载文件查看</small>
+                    </div>
+                </div>
+            `;
+        } else if (fileName.match(/\.(md|markdown|txt)$/i)) {
+            // Markdown 和文本文件预览
+            previewHTML = `
+                <div class="obj-box hope-stack" style="padding: 20px; width: 100%; height: 100%; flex-direction: column;">
+                    <div id="markdown-content" style="flex: 1; overflow: auto; width: 100%; background: var(--b3-theme-background); padding: 20px; border-radius: 6px; font-family: var(--b3-font-family);">
+                        <div style="text-align: center; color: #666;">正在加载文件内容...</div>
+                    </div>
+                </div>
+            `;
+            
+            // 异步加载文件内容
+            setTimeout(async () => {
+                try {
+                    const response = await fetch(fileUrl);
+                    if (response.ok) {
+                        const content = await response.text();
+                        const contentDiv = container.querySelector('#markdown-content');
+                        if (contentDiv) {
+                            if (fileName.match(/\.(md|markdown)$/i)) {
+                                // 简单的Markdown渲染
+                                const htmlContent = this.renderMarkdown(content);
+                                contentDiv.innerHTML = htmlContent;
+                            } else {
+                                // 纯文本显示
+                                contentDiv.innerHTML = `<pre style="white-space: pre-wrap; font-family: var(--b3-font-family-code); margin: 0;">${this.escapeHtml(content)}</pre>`;
+                            }
+                        }
+                    } else {
+                        throw new Error('文件加载失败');
+                    }
+                } catch (error) {
+                    const contentDiv = container.querySelector('#markdown-content');
+                    if (contentDiv) {
+                        contentDiv.innerHTML = `
+                            <div style="text-align: center; color: #f56565;">
+                                <p>文件加载失败</p>
+                                <a href="${fileUrl}" target="_blank" style="color: var(--b3-theme-primary);">点击下载文件</a>
+                            </div>
+                        `;
+                    }
+                }
+            }, 100);
+        } else {
+            // 不支持的文件类型
+            previewHTML = `
+                <div class="obj-box hope-stack" style="text-align: center; padding: 40px;">
+                    <div style="font-size: 48px; margin-bottom: 16px;">📄</div>
+                    <h3>${fileName}</h3>
+                    <p>此文件类型暂不支持预览</p>
+                    <a href="${fileUrl}" target="_blank" style="color: var(--b3-theme-primary); text-decoration: none;">点击下载文件</a>
+                </div>
+            `;
+        }
+        
+        container.innerHTML = previewHTML;
+    }
+
+    /**
+     * 简单的Markdown渲染器
+     */
+    private renderMarkdown(content: string): string {
+        let html = this.escapeHtml(content);
+        
+        // 标题
+        html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+        html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+        html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+        
+        // 粗体和斜体
+        html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        
+        // 代码块
+        html = html.replace(/```([\s\S]*?)```/g, '<pre style="background: var(--b3-theme-surface); padding: 10px; border-radius: 4px; overflow-x: auto;"><code>$1</code></pre>');
+        html = html.replace(/`([^`]+)`/g, '<code style="background: var(--b3-theme-surface); padding: 2px 4px; border-radius: 3px; font-family: var(--b3-font-family-code);">$1</code>');
+        
+        // 链接
+        html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" style="color: var(--b3-theme-primary);">$1</a>');
+        
+        // 列表
+        html = html.replace(/^\* (.*$)/gim, '<li>$1</li>');
+        html = html.replace(/^- (.*$)/gim, '<li>$1</li>');
+        html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+        
+        // 段落
+        html = html.replace(/\n\n/g, '</p><p>');
+        html = '<p>' + html + '</p>';
+        
+        // 换行
+        html = html.replace(/\n/g, '<br>');
+        
+        return `<div style="line-height: 1.6; color: var(--b3-theme-on-background);">${html}</div>`;
+    }
+
+    /**
+     * HTML转义
+     */
+    private escapeHtml(text: string): string {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     async onunload() {
         console.log(this.i18n.byePlugin);
         showMessage("Goodbye SiYuan Plugin");
+        
+        // 移除链接点击事件监听器
+        if (this.boundHandleLinkClick) {
+            document.removeEventListener('click', this.boundHandleLinkClick, true);
+        }
+        
         console.log("onunload");
     }
 
@@ -257,6 +645,91 @@ export default class PluginSample extends Plugin {
     }
 
     /**
+     * 验证 token 有效性
+     */
+    private async validateToken(serverUrl: string, token: string): Promise<boolean> {
+        try {
+            const response = await fetch(`${serverUrl}/api/me`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': token
+                }
+            });
+            
+            if (!response.ok) {
+                return false;
+            }
+            
+            const result = await response.json();
+            return result.code === 200;
+        } catch (error) {
+            console.error('Token 验证失败:', error);
+            return false;
+        }
+    }
+
+    /**
+     * 刷新 token（重新登录）
+     */
+    private async refreshToken(): Promise<string | null> {
+        try {
+            const serverUrl = this.settingUtils.get("serverUrl");
+            const username = this.settingUtils.get("username");
+            const password = this.settingUtils.get("password");
+            
+            if (!serverUrl || !username || !password) {
+                throw new Error('登录信息不完整');
+            }
+            
+            const loginResponse = await this.loginToAList(serverUrl, username, password);
+            if (loginResponse && loginResponse.token) {
+                // 保存新的 token 到设置中
+                await this.settingUtils.setAndSave("token", loginResponse.token);
+                console.log('Token 刷新成功');
+                return loginResponse.token;
+            }
+            
+            return null;
+        } catch (error) {
+            console.error('Token 刷新失败:', error);
+            return null;
+        }
+    }
+
+    /**
+     * 验证服务器URL格式
+     */
+    private validateServerUrl(url: string): boolean {
+        try {
+            // 移除末尾的斜杠
+            const cleanUrl = url.replace(/\/$/, '');
+            
+            // 使用URL构造函数验证URL格式
+            const urlObj = new URL(cleanUrl);
+            
+            // 检查协议是否为http或https
+            if (!['http:', 'https:'].includes(urlObj.protocol)) {
+                return false;
+            }
+            
+            // 检查是否有主机名
+            if (!urlObj.hostname) {
+                return false;
+            }
+            
+            // 检查端口号是否有效（如果指定了的话）
+            if (urlObj.port && (isNaN(Number(urlObj.port)) || Number(urlObj.port) < 1 || Number(urlObj.port) > 65535)) {
+                return false;
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('URL validation error:', error);
+            return false;
+        }
+    }
+
+    /**
      * 测试 AList 服务器连接
      */
     async testAListConnection() {
@@ -273,6 +746,8 @@ export default class PluginSample extends Plugin {
             showMessage("正在测试连接...", 2000, "info");
             const response = await this.loginToAList(serverUrl, username, password);
             if (response && response.token) {
+                // 保存 token 到设置中
+                await this.settingUtils.setAndSave("token", response.token);
                 showMessage("连接成功！", 3000, "info");
             } else {
                 showMessage("连接失败：无效的响应", 3000, "error");

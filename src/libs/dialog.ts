@@ -157,7 +157,10 @@ export const svelteDialog = (args: {
     let component = args.constructor(container);
     const { dialog, close } = simpleDialog({
         ...args, ele: container, callback: () => {
-            component.$destroy();
+            // 安全地销毁组件，避免 component 为 null 时的错误
+            if (component && typeof component.$destroy === 'function') {
+                component.$destroy();
+            }
             if (args.callback) args.callback();
         }
     });

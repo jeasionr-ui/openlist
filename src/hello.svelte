@@ -91,12 +91,27 @@ export let plugin;
         try {
             const loginResponse = await plugin.loginToAList(serverUrl, username, password);
             token = loginResponse.token;
+            // 保存 token 到设置中，以便其他地方使用
+            await plugin.settingUtils.setAndSave("token", token);
             isLoggedIn = true;
             currentPath = lastPath;
             await loadFiles(currentPath);
         } catch (err) {
             console.error("Login failed:", err);
-            error = `登录失败: ${err.message || '未知错误'}`;
+            // 详细的错误分类和处理
+            if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+                error = `🌐 网络连接失败: 无法连接到AList服务器，请检查服务器地址和网络连接`;
+            } else if (err.message.includes('401') || err.message.includes('Unauthorized')) {
+                error = `🔐 认证失败: 用户名或密码错误，请检查登录凭据`;
+            } else if (err.message.includes('403') || err.message.includes('Forbidden')) {
+                error = `⛔ 访问被拒绝: 账户权限不足或被禁用`;
+            } else if (err.message.includes('404') || err.message.includes('Not Found')) {
+                error = `❓ 服务器未找到: 请检查AList服务器地址是否正确`;
+            } else if (err.message.includes('timeout')) {
+                error = `⏱️ 连接超时: 服务器响应超时，请稍后重试`;
+            } else {
+                error = `❌ 登录失败: ${err.message || '未知错误，请检查服务器配置'}`;
+            }
             isLoggedIn = false;
         } finally {
             isLoading = false;
@@ -149,10 +164,23 @@ export let plugin;
             await plugin.settingUtils.setAndSave("lastPath", path);
         } catch (err) {
             console.error("Load files failed:", err);
-            error = `加载文件失败: ${err.message || '未知错误'}`;
-            if (err.message.includes('401') || err.message.includes('403')) {
+            // 详细的错误分类和处理
+            if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+                error = `🌐 网络连接失败: 无法连接到AList服务器，请检查网络连接`;
+            } else if (err.message.includes('401') || err.message.includes('Unauthorized')) {
+                error = `🔐 登录已过期: 请重新登录AList服务器`;
                 isLoggedIn = false;
                 token = "";
+            } else if (err.message.includes('403') || err.message.includes('Forbidden')) {
+                error = `⛔ 访问被拒绝: 没有权限访问此路径`;
+                isLoggedIn = false;
+                token = "";
+            } else if (err.message.includes('404') || err.message.includes('Not Found')) {
+                error = `📂 路径不存在: 指定的文件夹路径不存在`;
+            } else if (err.message.includes('timeout')) {
+                error = `⏱️ 加载超时: 服务器响应超时，请稍后重试`;
+            } else {
+                error = `❌ 加载失败: ${err.message || '未知错误，请检查服务器状态'}`;
             }
         } finally {
             isLoading = false;
@@ -377,6 +405,50 @@ export let plugin;
             console.error("Download failed:", err);
             error = `下载失败: ${err.message || '未知错误'}`;
         }
+    }
+
+    /**
+     * 在思源笔记光标位置嵌入AList文件链接
+     */
+    /**
+     * 嵌入 AList 文件链接到思源笔记
+     */
+    async function embedAListLink(file) {
+        try {
+            const filePath = currentPath === "/" ? `/${file.name}` : `${currentPath}/${file.name}`;
+            
+            // 使用自定义协议 alist:// 格式
+            const alistLink = `alist://${encodeURIComponent(filePath)}`;
+            
+            // 创建引用块格式，避免与思源笔记查询嵌入块冲突
+            const blockContent = `> 📁 **AList 文件**: [${file.name}](${alistLink})\n> 📂 **文件路径**: \`${filePath}\`\n> 🔗 点击链接预览文件`;
+            
+            console.log('Generated AList link:', alistLink);
+            console.log('Block content:', blockContent);
+            
+            // 使用思源笔记API插入自定义块
+            if (window.siyuan && window.siyuan.ws) {
+                // 获取当前活动的编辑器
+                const protyle = document.querySelector('.protyle:not(.fn__none) .protyle-wysiwyg');
+                if (protyle) {
+                    // 插入自定义块内容
+                    document.execCommand('insertText', false, blockContent);
+                    await pushMsg(`已嵌入AList文件块: ${file.name}`);
+                } else {
+                    // 如果没有活动编辑器，则复制到剪贴板
+                    await navigator.clipboard.writeText(blockContent);
+                    await pushMsg(`已复制文件块到剪贴板: ${file.name}`);
+                }
+            } else {
+                // 备用方案：复制到剪贴板
+                await navigator.clipboard.writeText(blockContent);
+                await pushMsg(`已复制文件块到剪贴板: ${file.name}`);
+            }
+            
+        } catch (err) {
+             console.error("Embed AList link failed:", err);
+             error = `嵌入链接失败: ${err.message || '未知错误'}`;
+         }
     }
 
     /**
@@ -1313,7 +1385,16 @@ export let plugin;
         {#if isLoading}
             <div class="alist-loading">
                 <div class="loading-spinner"></div>
-                <span>加载中...</span>
+                <div class="loading-text">
+                    <span class="loading-title">正在加载...</span>
+                    <span class="loading-subtitle">
+                        {#if !isLoggedIn}
+                            正在连接AList服务器
+                        {:else}
+                            正在获取文件列表
+                        {/if}
+                    </span>
+                </div>
             </div>
         {:else if error}
             <div class="alist-error">
@@ -1380,6 +1461,14 @@ export let plugin;
                                     style="margin-left: 4px;"
                                 >
                                     📥 下载
+                                </button>
+                                <button 
+                                    class="b3-button b3-button--small embed-link-btn"
+                                    on:click={() => embedAListLink(file)}
+                                    title="嵌入到笔记"
+                                    style="margin-left: 4px;"
+                                >
+                                    📝 嵌入此处
                                 </button>
                             </div>
                         {/if}

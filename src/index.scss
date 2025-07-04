@@ -1,0 +1,23 @@
+/* 预览对话框样式 */
+.dialog-content {
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column;
+}
+
+/* 确保预览内容占满整个对话框 */
+.b3-dialog__body .dialog-content {
+    flex: 1;
+    overflow: auto;
+}
+
+/* 预览内容样式优化 */
+.obj-box.hope-stack {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
