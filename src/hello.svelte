@@ -2940,9 +2940,9 @@ export let plugin;
         background: var(--b3-theme-background);
         border-radius: 8px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-        width: 90vw;
-        max-width: 800px;
-        max-height: 90vh;
+        width: 95vw;
+        max-width: 1200px;
+        max-height: 95vh;
         display: flex;
         flex-direction: column;
         overflow: hidden;
@@ -2982,7 +2982,7 @@ export let plugin;
         flex: 1;
         padding: 16px;
         overflow: auto;
-        min-height: 300px;
+        min-height: 400px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -2998,20 +2998,112 @@ export let plugin;
 
     .preview-content {
         width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
         
         // 重置AList预览内容的样式以适应思源主题
         :global(.obj-box) {
             background: var(--b3-theme-surface) !important;
             border-radius: 8px;
             padding: 16px;
+            margin: 16px;
+            width: calc(100% - 32px) !important;
+            height: calc(100% - 32px) !important;
+            display: flex !important;
+            flex-direction: column !important;
+            box-sizing: border-box !important;
         }
         
+        :global(.hope-stack) {
+            width: 100% !important;
+            height: 100% !important;
+            flex: 1 !important;
+        }
+        
+        // 图片样式 - 保持边距和合适尺寸
         :global(.hope-image) {
-            max-width: 100%;
+            max-width: calc(100% - 32px);
+            max-height: calc(100% - 32px);
             height: auto;
             border-radius: 4px;
+            object-fit: contain;
+            margin: 16px;
         }
         
+        // PDF和Office文档样式 - A4纸张比例和足够高度
+        :global(iframe) {
+            width: calc(100% - 32px) !important;
+            height: calc(100vh - 200px) !important;
+            min-height: 600px !important;
+            margin: 16px !important;
+            border: none !important;
+            border-radius: 4px !important;
+        }
+        
+        // 视频样式 - 保持边距和播放控件可见
+        :global(video) {
+            max-width: calc(100% - 32px) !important;
+            max-height: calc(100% - 64px) !important;
+            height: auto;
+            margin: 16px !important;
+            border-radius: 4px !important;
+        }
+        
+        // 文本和Markdown内容样式 - A4纸张比例
+         :global(.text-content), :global(.markdown-content) {
+             max-width: 800px !important;
+             width: 100% !important;
+             height: calc(100vh - 200px) !important;
+             min-height: 600px !important;
+             margin: 16px auto !important;
+             padding: 20px !important;
+             background: var(--b3-theme-background) !important;
+             border: 1px solid var(--b3-theme-surface-lighter) !important;
+             border-radius: 4px !important;
+             overflow-y: auto !important;
+             font-family: var(--b3-font-family-code) !important;
+             font-size: 14px !important;
+             line-height: 1.6 !important;
+             white-space: pre-wrap !important;
+             word-wrap: break-word !important;
+             box-sizing: border-box !important;
+         }
+         
+         // Markdown内容特殊样式
+         :global(.markdown-content) {
+             font-family: var(--b3-font-family) !important;
+         }
+         
+         :global(.markdown-content h1),
+         :global(.markdown-content h2),
+         :global(.markdown-content h3),
+         :global(.markdown-content h4),
+         :global(.markdown-content h5),
+         :global(.markdown-content h6) {
+             color: var(--b3-theme-on-background) !important;
+             margin: 16px 0 8px 0 !important;
+         }
+         
+         :global(.markdown-content p) {
+             margin: 8px 0 !important;
+             color: var(--b3-theme-on-background) !important;
+         }
+         
+         :global(.markdown-content code) {
+             background: var(--b3-theme-surface) !important;
+             padding: 2px 4px !important;
+             border-radius: 3px !important;
+             font-family: var(--b3-font-family-code) !important;
+         }
+         
+         :global(.markdown-content pre) {
+             background: var(--b3-theme-surface) !important;
+             padding: 12px !important;
+             border-radius: 4px !important;
+             overflow-x: auto !important;
+             margin: 12px 0 !important;
+         }
 
     }
 

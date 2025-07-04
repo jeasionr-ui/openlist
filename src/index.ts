@@ -533,10 +533,10 @@ export default class PluginSample extends Plugin {
                             if (fileName.match(/\.(md|markdown)$/i)) {
                                 // 简单的Markdown渲染
                                 const htmlContent = this.renderMarkdown(content);
-                                contentDiv.innerHTML = htmlContent;
+                                contentDiv.innerHTML = `<div class="markdown-content">${htmlContent}</div>`;
                             } else {
                                 // 纯文本显示
-                                contentDiv.innerHTML = `<pre style="white-space: pre-wrap; font-family: var(--b3-font-family-code); margin: 0;">${this.escapeHtml(content)}</pre>`;
+                                contentDiv.innerHTML = `<pre class="text-content">${this.escapeHtml(content)}</pre>`;
                             }
                         }
                     } else {
