@@ -39,6 +39,17 @@ export let plugin;
     let selectedFiles = new Set();
     let isDeletingFiles = false;
 
+    // 上传标签页相关变量
+    let uploadTab = "online"; // "online" 或 "offline"
+    
+    // 离线下载相关变量
+    let downloadUrls = "";
+    let isOfflineDownloading = false;
+    
+    // 任务列表相关变量
+    let tasks = [];
+    let isLoadingTasks = false;
+
     onMount(async () => {
         await initializeAList();
         setupFolderInput();
@@ -605,6 +616,10 @@ export let plugin;
      */
     function switchTab(tab) {
         activeTab = tab;
+        // 如果切换到任务标签页，自动加载任务列表
+        if (tab === "task") {
+            loadUndoneTasks();
+        }
     }
 
     /**
@@ -797,6 +812,389 @@ export let plugin;
             isDeletingFiles = false;
         }
     }
+
+    /**
+     * 获取未完成任务列表
+     */
+    async function loadUndoneTasks() {
+        if (!isLoggedIn || !token) {
+            error = "请先登录";
+            return;
+        }
+
+        isLoadingTasks = true;
+        error = "";
+
+        try {
+            const serverUrl = plugin.settingUtils.get("serverUrl");
+            
+            // 获取未完成的任务
+            const undoneResponse = await fetch(`${serverUrl}/api/admin/task/upload/undone`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': token
+                }
+            });
+
+            if (!undoneResponse.ok) {
+                throw new Error(`HTTP ${undoneResponse.status}: ${undoneResponse.statusText}`);
+            }
+
+            const undoneData = await undoneResponse.json();
+            if (undoneData.code !== 200) {
+                throw new Error(undoneData.message || '获取未完成任务失败');
+            }
+
+            // 获取已完成的离线下载任务（包括失败的）
+            const doneResponse = await fetch(`${serverUrl}/api/task/offline_download/done`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': token
+                }
+            });
+
+            let doneTasks = [];
+            if (doneResponse.ok) {
+                const doneData = await doneResponse.json();
+                if (doneData.code === 200) {
+                    // 显示所有已完成的任务（成功：state=2，失败：state=7）
+                    doneTasks = (doneData.data || []).filter(task => task.state === 2 || task.state === 7);
+                }
+            }
+
+            // 合并未完成任务和已完成任务
+            tasks = [...(undoneData.data || []), ...doneTasks];
+        } catch (err) {
+            console.error("Load tasks failed:", err);
+            error = `加载任务失败: ${err.message || '未知错误'}`;
+        } finally {
+            isLoadingTasks = false;
+        }
+    }
+
+    /**
+     * 离线下载文件
+     */
+    async function startOfflineDownload() {
+        if (!downloadUrls.trim()) {
+            error = "请输入下载链接";
+            return;
+        }
+
+        isOfflineDownloading = true;
+        error = "";
+
+        try {
+            const serverUrl = plugin.settingUtils.get("serverUrl");
+            const urls = downloadUrls.split('\n').filter(url => url.trim());
+            
+            for (const url of urls) {
+                const response = await fetch(`${serverUrl}/api/fs/add_offline_download`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': token
+                    },
+                    body: JSON.stringify({
+                        path: currentPath,
+                        urls: [url.trim()],
+                        tool: "SimpleHttp",
+                        delete_policy: "delete_on_upload_succeed"
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`添加离线下载失败: ${response.status} ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                if (result.code !== 200) {
+                    throw new Error(result.message || '添加离线下载失败');
+                }
+            }
+
+            // 显示成功提示
+            await pushMsg(`成功添加 ${urls.length} 个离线下载任务！`);
+            downloadUrls = "";
+            
+        } catch (err) {
+            console.error("Offline download failed:", err);
+            error = `离线下载失败: ${err.message || '未知错误'}`;
+        } finally {
+            isOfflineDownloading = false;
+        }
+    }
+
+
+
+    /**
+     * 格式化任务名称，移除"download "前缀并优化显示
+     */
+    /**
+     * 格式化任务名称显示
+     * @param {string} name - 原始任务名称
+     * @returns {string} 格式化后的任务名称
+     */
+    function formatTaskName(name) {
+        if (!name) return '未知任务';
+        
+        // 移除"download "前缀
+        let cleanName = name.replace(/^download\s+/, '');
+        
+        // 移除" to ("之后的存储路径部分
+        const toIndex = cleanName.indexOf(' to (');
+        if (toIndex !== -1) {
+            cleanName = cleanName.substring(0, toIndex);
+        }
+        
+        // 尝试从任务名称中提取URL（处理反引号包围的URL）
+        const match = cleanName.match(/`(.+?)`/);
+        if (match) {
+            const url = match[1];
+            try {
+                const urlObj = new URL(url);
+                const domain = urlObj.hostname;
+                // 获取URL路径的最后部分作为文件名
+                const pathParts = urlObj.pathname.split('/');
+                const fileName = pathParts[pathParts.length - 1] || 'index';
+                return `${domain}/${fileName}`;
+            } catch {
+                // 如果不是有效URL，显示原始URL的关键部分
+                return url.length > 50 ? `${url.slice(0, 25)}...${url.slice(-20)}` : url;
+            }
+        }
+        
+        // 对于其他类型的任务名称，直接显示清理后的名称
+        return cleanName.length > 60 ? `${cleanName.slice(0, 30)}...${cleanName.slice(-25)}` : cleanName;
+    }
+
+    // 任务选择状态
+    let selectedTasks = new Set();
+
+    /**
+     * 切换任务选择状态
+     */
+    function toggleTaskSelection(taskId) {
+        if (selectedTasks.has(taskId)) {
+            selectedTasks.delete(taskId);
+        } else {
+            selectedTasks.add(taskId);
+        }
+        selectedTasks = selectedTasks; // 触发响应式更新
+    }
+
+    /**
+     * 全选/取消全选任务
+     */
+    function toggleAllTasks() {
+        if (selectedTasks.size === tasks.length) {
+            selectedTasks.clear();
+        } else {
+            selectedTasks = new Set(tasks.map(task => task.id || task.name));
+        }
+        selectedTasks = selectedTasks; // 触发响应式更新
+    }
+
+    /**
+     * 清空已成功的离线下载任务
+     * 调用API清除所有已完成状态的任务
+     */
+    async function clearSucceededTasks() {
+        if (!token) {
+            error = "请先登录";
+            return;
+        }
+
+        isLoading = true;
+        error = "";
+
+        try {
+            const serverUrl = plugin.settingUtils.get("serverUrl");
+            
+            const response = await fetch(`${serverUrl}/api/task/offline_download/clear_succeeded`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': token,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.code !== 200) {
+                throw new Error(result.message || '清空已成功任务失败');
+            }
+
+            // 显示成功提示
+            await pushMsg('已清空所有成功的离线下载任务！');
+            
+            // 刷新任务列表
+            await loadUndoneTasks();
+            
+        } catch (err) {
+            console.error("Clear succeeded tasks error:", err);
+            error = `清空已成功任务失败: ${err.message || '未知错误'}`;
+        } finally {
+            isLoading = false;
+        }
+    }
+
+    /**
+     * 重试已选中的离线下载任务
+     * 调用API重试指定的任务ID列表
+     */
+    async function retrySelectedTasks() {
+        if (!token) {
+            error = "请先登录";
+            return;
+        }
+
+        // 检查是否有选中的任务
+        if (selectedTasks.size === 0) {
+            await pushMsg('请先选择要重试的任务！');
+            return;
+        }
+
+        isLoading = true;
+        error = "";
+
+        try {
+            const serverUrl = plugin.settingUtils.get("serverUrl");
+            const taskIds = Array.from(selectedTasks);
+            
+            const response = await fetch(`${serverUrl}/api/task/offline_download/retry_some`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(taskIds)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.code !== 200) {
+                throw new Error(result.message || '重试选中任务失败');
+            }
+
+            // 显示成功提示
+            await pushMsg(`已重试 ${taskIds.length} 个选中的离线下载任务！`);
+            
+            // 清空选中状态
+            selectedTasks.clear();
+            selectedTasks = selectedTasks;
+            
+            // 刷新任务列表
+            await loadUndoneTasks();
+            
+        } catch (err) {
+            console.error("Retry selected tasks error:", err);
+            error = `重试选中任务失败: ${err.message || '未知错误'}`;
+        } finally {
+            isLoading = false;
+        }
+    }
+
+    /**
+     * 清空已完成的离线下载任务
+     * 调用API清除所有已完成状态的任务
+     */
+    async function clearDoneTasks() {
+        if (!token) {
+            error = "请先登录";
+            return;
+        }
+
+        isLoading = true;
+        error = "";
+
+        try {
+            const serverUrl = plugin.settingUtils.get("serverUrl");
+            
+            const response = await fetch(`${serverUrl}/api/task/offline_download/clear_done`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': token,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.code !== 200) {
+                throw new Error(result.message || '清空已完成任务失败');
+            }
+
+            // 显示成功提示
+            await pushMsg('已清空所有完成的离线下载任务！');
+            
+            // 刷新任务列表
+            await loadUndoneTasks();
+            
+        } catch (err) {
+            console.error("Clear done tasks error:", err);
+            error = `清空已完成任务失败: ${err.message || '未知错误'}`;
+        } finally {
+            isLoading = false;
+        }
+    }
+
+    /**
+     * 重试失败的离线下载任务
+     */
+    async function retryFailedTasks() {
+        if (!token) {
+            error = "请先登录";
+            return;
+        }
+
+        isLoading = true;
+        error = "";
+
+        try {
+            const serverUrl = plugin.settingUtils.get("serverUrl");
+            
+            const response = await fetch(`${serverUrl}/api/task/offline_download/retry_failed`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': token,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.code !== 200) {
+                throw new Error(result.message || '重试失败任务失败');
+            }
+
+            // 显示成功提示
+            await pushMsg('已重试所有失败的离线下载任务！');
+            
+            // 刷新任务列表
+            await loadUndoneTasks();
+            
+        } catch (err) {
+            console.error("Retry failed tasks error:", err);
+            error = `重试失败任务失败: ${err.message || '未知错误'}`;
+        } finally {
+            isLoading = false;
+        }
+    }
+
+
 </script>
 
 <div class="alist-browser">
@@ -1064,6 +1462,13 @@ export let plugin;
                     >
                         📤 上传文件
                     </button>
+                    <button 
+                        class="tab-btn" 
+                        class:active={activeTab === "task"}
+                        on:click={() => switchTab("task")}
+                    >
+                        📋 任务列表
+                    </button>
                 </div>
                 
                 <div class="function-body">
@@ -1185,9 +1590,28 @@ export let plugin;
                         </div>
                     {:else if activeTab === "upload"}
                         <div class="upload-management">
-                            <!-- 文件选择区域 -->
-                            <div class="function-section">
-                                <h4>📤 上传文件到 {currentPath}</h4>
+                            <!-- 上传方式标签页 -->
+                            <div class="upload-method-tabs">
+                                <button 
+                                    class="upload-method-tab" 
+                                    class:active={uploadTab === "online"}
+                                    on:click={() => uploadTab = "online"}
+                                >
+                                    🌐 在线上传
+                                </button>
+                                <button 
+                                    class="upload-method-tab" 
+                                    class:active={uploadTab === "offline"}
+                                    on:click={() => uploadTab = "offline"}
+                                >
+                                    📥 离线下载
+                                </button>
+                            </div>
+                            
+                            {#if uploadTab === "online"}
+                                <!-- 在线上传区域 -->
+                                <div class="function-section">
+                                    <h4>📤 在线上传文件到 {currentPath}</h4>
                                 <div class="upload-drop-zone">
                                     <input 
                                         type="file" 
@@ -1293,6 +1717,177 @@ export let plugin;
                                         {/if}
                                     </button>
                                 </div>
+                                </div>
+                            {:else if uploadTab === "offline"}
+                                <!-- 离线下载区域 -->
+                                <div class="function-section">
+                                    <h4>📥 离线下载到 {currentPath}</h4>
+                                    <p class="section-desc">输入下载链接，AList 将在后台自动下载文件</p>
+                                    
+                                    <div class="offline-download-area">
+                                        <div class="download-input-group">
+                                            <label for="download-urls">下载链接（每行一个）:</label>
+                                            <textarea 
+                                                id="download-urls"
+                                                bind:value={downloadUrls}
+                                                placeholder="请输入下载链接，每行一个\n例如：\nhttps://example.com/file1.zip\nhttps://example.com/file2.pdf"
+                                                class="b3-text-field download-textarea"
+                                                rows="6"
+                                                disabled={isOfflineDownloading}
+                                            ></textarea>
+                                        </div>
+                                        
+                                        <div class="download-actions">
+                                            <button 
+                                                class="b3-button b3-button--primary" 
+                                                on:click={startOfflineDownload} 
+                                                disabled={!downloadUrls.trim() || isOfflineDownloading}
+                                            >
+                                                {#if isOfflineDownloading}
+                                                    添加中...
+                                                {:else}
+                                                    📥 开始离线下载
+                                                {/if}
+                                            </button>
+                                        </div>
+                                        
+                                        <div class="download-tips">
+                                            <h5>💡 使用提示：</h5>
+                                            <ul>
+                                                <li>支持 HTTP/HTTPS 直链下载</li>
+                                                <li>每行输入一个下载链接</li>
+                                                <li>下载任务将在后台执行</li>
+                                                <li>可在任务列表中查看下载进度</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            {/if}
+                        </div>
+                    {:else if activeTab === "task"}
+                        <div class="task-management">
+                            <!-- 任务列表 -->
+                            <div class="function-section">
+                                <div class="task-header">
+                                    <div class="task-title">
+                                        <h4>📋 任务列表</h4>
+                                        <p class="section-desc">查看和管理未完成的任务</p>
+                                    </div>
+                                    <div class="task-actions">
+                                        <button 
+                                            class="b3-button task-retry-selected-btn" 
+                                            on:click={retrySelectedTasks}
+                                            disabled={isLoadingTasks || isLoading || selectedTasks.size === 0}
+                                            title="重试已选中的离线下载任务 ({selectedTasks.size} 个)"
+                                            style="background-color: #4CAF50; color: white;"
+                                        >
+                                            重试选中
+                                        </button>
+                                        <button 
+                                            class="b3-button task-retry-btn" 
+                                            on:click={retryFailedTasks}
+                                            disabled={isLoadingTasks || isLoading}
+                                            title="重试所有失败的离线下载任务"
+                                            style="background-color: #FF9800; color: white;"
+                                        >
+                                            重试失败
+                                        </button>
+                                        <button 
+                                            class="b3-button task-clear-btn" 
+                                            on:click={clearSucceededTasks}
+                                            disabled={isLoadingTasks || isLoading}
+                                            title="清空所有已成功的离线下载任务"
+                                            style="background-color: #2196F3; color: white;"
+                                        >
+                                            清空成功
+                                        </button>
+                                        <button 
+                                            class="b3-button task-clear-done-btn" 
+                                            on:click={clearDoneTasks}
+                                            disabled={isLoadingTasks || isLoading}
+                                            title="清空所有已完成的离线下载任务"
+                                            style="background-color: #9C27B0; color: white;"
+                                        >
+                                            清空
+                                        </button>
+                                        <button 
+                                            class="b3-button b3-button--primary task-refresh-btn" 
+                                            on:click={loadUndoneTasks}
+                                            disabled={isLoadingTasks}
+                                        >
+                                            {#if isLoadingTasks}
+                                                刷新中...
+                                            {:else}
+                                                刷新
+                                            {/if}
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="task-content">
+                                    {#if isLoadingTasks}
+                                        <div class="task-loading">
+                                            <div class="loading-spinner"></div>
+                                            <p>加载任务列表中...</p>
+                                        </div>
+                                    {:else if tasks.length === 0}
+                                        <div class="task-empty">
+                                            <div class="empty-icon">✅</div>
+                                            <p>暂无未完成任务</p>
+                                        </div>
+                                    {:else}
+                                        <div class="task-table-container">
+                                            <table class="task-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th class="task-checkbox-col">
+                                                            <input 
+                                                                type="checkbox" 
+                                                                checked={selectedTasks.size === tasks.length && tasks.length > 0}
+                                                                on:change={toggleAllTasks}
+                                                            />
+                                                        </th>
+                                                        <th class="task-status-col">状态</th>
+                                                        <th class="task-creator-col">创建者</th>
+                                                        <th class="task-name-col">名称</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {#each tasks as task}
+                                                        <tr class="task-row" class:selected={selectedTasks.has(task.id || task.name)}>
+                                                            <td class="task-checkbox-col">
+                                                                <input 
+                                                                    type="checkbox" 
+                                                                    checked={selectedTasks.has(task.id || task.name)}
+                                                                    on:change={() => toggleTaskSelection(task.id || task.name)}
+                                                                />
+                                                            </td>
+                                                            <td class="task-status-col">
+                                                <span class="task-status-icon">
+                                                    {#if task.state === 2}
+                                                        ✅
+                                                    {:else if task.state === 7}
+                                                        ❌
+                                                    {:else}
+                                                        🔄
+                                                    {/if}
+                                                </span>
+                                            </td>
+                                                            <td class="task-creator-col">
+                                                                <span class="task-creator">{task.creator || 'admin'}</span>
+                                                            </td>
+                                                            <td class="task-name-col">
+                                                <span class="task-name-text" title="{task.name || '未知任务'}">
+                                                    {formatTaskName(task.name)}
+                                                </span>
+                                            </td>
+                                                        </tr>
+                                                    {/each}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    {/if}
+                                </div>
                             </div>
                         </div>
                     {/if}
@@ -1342,6 +1937,8 @@ export let plugin;
             </div>
         </div>
     {/if}
+
+
 </div>
 
 <style lang="scss">
@@ -1981,6 +2578,40 @@ export let plugin;
         justify-content: flex-end;
     }
 
+    /* 上传方式标签页样式 */
+    .upload-method-tabs {
+        display: flex;
+        border-bottom: 1px solid var(--b3-theme-surface-lighter);
+        background: var(--b3-theme-surface);
+        margin: -20px -20px 20px -20px;
+        border-radius: 0;
+    }
+    
+    .upload-method-tab {
+        background: none;
+        border: none;
+        padding: 12px 20px;
+        cursor: pointer;
+        color: var(--b3-theme-on-surface-light);
+        font-size: 14px;
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s;
+        flex: 1;
+        text-align: center;
+    }
+    
+    .upload-method-tab:hover {
+        background: var(--b3-theme-surface-lighter);
+        color: var(--b3-theme-on-surface);
+    }
+    
+    .upload-method-tab.active {
+        color: var(--b3-theme-primary);
+        border-bottom-color: var(--b3-theme-primary);
+        background: var(--b3-theme-background);
+        font-weight: 500;
+    }
+
     /* 删除文件功能样式 */
     .file-selection {
         margin-top: 12px;
@@ -2196,6 +2827,237 @@ export let plugin;
         display: flex;
         justify-content: flex-end;
         background: var(--b3-theme-surface);
+    }
+
+    // 离线下载样式
+    .offline-download-area {
+        padding: 16px;
+        background: var(--b3-theme-surface);
+        border-radius: 6px;
+        margin-top: 12px;
+    }
+
+    .download-input-group {
+        margin-bottom: 16px;
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: var(--b3-theme-on-surface);
+            font-weight: 500;
+        }
+    }
+
+    .download-textarea {
+        width: 100%;
+        min-height: 120px;
+        resize: vertical;
+        font-family: var(--b3-font-family-code);
+        font-size: 12px;
+        line-height: 1.4;
+    }
+
+    .download-actions {
+        margin-bottom: 16px;
+        text-align: center;
+    }
+
+    .download-tips {
+        background: var(--b3-theme-surface-lighter);
+        padding: 12px;
+        border-radius: 4px;
+        border-left: 3px solid var(--b3-theme-primary);
+
+        h5 {
+            margin: 0 0 8px 0;
+            font-size: 13px;
+            color: var(--b3-theme-on-surface);
+        }
+
+        ul {
+            margin: 0;
+            padding-left: 16px;
+            font-size: 12px;
+            color: var(--b3-theme-on-surface-light);
+            line-height: 1.4;
+
+            li {
+                margin-bottom: 4px;
+            }
+        }
+    }
+
+    // 任务列表样式
+    .task-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 16px;
+        gap: 16px;
+    }
+
+    .task-title {
+        flex: 1;
+        
+        h4 {
+            margin: 0 0 4px 0;
+        }
+        
+        .section-desc {
+            margin: 0;
+        }
+    }
+
+    .task-actions {
+        display: flex;
+        gap: 8px;
+        flex-shrink: 0;
+        align-self: flex-start;
+        margin-top: 2px;
+    }
+
+    .task-refresh-btn {
+        flex-shrink: 0;
+    }
+
+    .task-clear-btn {
+        flex-shrink: 0;
+    }
+
+    .task-retry-selected-btn {
+        flex-shrink: 0;
+    }
+
+    .task-retry-btn {
+        flex-shrink: 0;
+    }
+
+    .task-clear-done-btn {
+        flex-shrink: 0;
+    }
+
+    .task-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+        gap: 12px;
+        color: var(--b3-theme-on-surface);
+    }
+
+    .task-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+        gap: 12px;
+        color: var(--b3-theme-on-surface-light);
+
+        .empty-icon {
+            font-size: 32px;
+        }
+    }
+
+    .task-table {
+        width: 100%;
+        border-collapse: collapse;
+        max-height: 400px;
+        overflow-y: auto;
+        display: block;
+        border: 1px solid var(--b3-theme-surface-lighter);
+        border-radius: 6px;
+    }
+
+    .task-table thead {
+        display: table;
+        width: 100%;
+        table-layout: fixed;
+        background: var(--b3-theme-surface-lighter);
+    }
+
+    .task-table tbody {
+        display: block;
+        max-height: 350px;
+        overflow-y: auto;
+        width: 100%;
+    }
+
+    .task-table tr {
+        display: table;
+        width: 100%;
+        table-layout: fixed;
+    }
+
+    .task-table th,
+    .task-table td {
+        padding: 8px 12px;
+        text-align: left;
+        border-bottom: 1px solid var(--b3-theme-surface-lighter);
+        vertical-align: middle;
+    }
+
+    .task-table th {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--b3-theme-on-surface);
+        background: var(--b3-theme-surface-lighter);
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+
+    .task-table td {
+        font-size: 13px;
+        color: var(--b3-theme-on-surface);
+    }
+
+    .task-table .task-checkbox-col {
+        width: 10%;
+        text-align: center;
+    }
+
+    .task-table .task-status-col {
+        width: 10%;
+    }
+
+    .task-table .task-creator-col {
+        width: 15%;
+    }
+
+    .task-table .task-name-col {
+        width: 65%;
+        min-width: 200px;
+    }
+
+    .task-table tbody tr:hover {
+        background: var(--b3-theme-surface-lighter);
+    }
+
+    .task-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .task-checkbox {
+        cursor: pointer;
+    }
+
+    .task-status-icon {
+        font-size: 16px;
+        display: inline-block;
+        text-align: center;
+    }
+
+    .task-name-text {
+        word-break: break-all;
+        line-height: 1.3;
+    }
+
+    .task-creator {
+        font-size: 12px;
+        color: var(--b3-theme-on-surface-light);
     }
 </style>
 
