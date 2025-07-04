@@ -1,7 +1,7 @@
 {
   "name": "openlist",
-  "author": "joe",
-  "url": "https://github.com/joe/openlist",
+  "author": "joasionr-ui",
+  "url": "jeasionr-ui/openlist",
   "version": "0.1.0",
   "minAppVersion": "3.0.12",
   "backends": [
@@ -21,12 +21,12 @@
     "desktop-window"
   ],
   "displayName": {
-    "en_US": "Plugin sample with vite and svelte",
-    "zh_CN": "插件样例 vite + svelte 版"
+    "en_US": "AList File Browser",
+    "zh_CN": "AList 文件浏览器"
   },
   "description": {
-    "en_US": "SiYuan plugin sample with vite and svelte",
-    "zh_CN": "使用 vite 和 svelte 开发的思源插件样例"
+    "en_US": "Integrate AList file manager into SiYuan sidebar for seamless file browsing",
+    "zh_CN": "在思源笔记侧边栏集成 AList 文件管理器，实现无缝文件浏览"
   },
   "readme": {
     "en_US": "README.md",
@@ -38,8 +38,10 @@
     ]
   },
   "keywords": [
-    "plugin",
-    "sample",
-    "插件样例"
+    "alist",
+    "file",
+    "browser",
+    "文件管理",
+    "文件浏览器"
   ]
 }
