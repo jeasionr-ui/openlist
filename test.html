@@ -187,7 +187,59 @@
                 <li><strong>错误恢复：</strong>智能的错误处理和重试机制</li>
                 <li><strong>代码质量：</strong>移除所有示例代码，专注核心功能</li>
                 <li><strong>用户体验：</strong>简洁的界面，只保留必要功能</li>
+                <li><strong>文件预览</strong>：支持图片、视频、音频、文本、PDF、Office 文档（Word/Excel/PPT）、EPUB 等多种文件类型的预览，使用 Microsoft Office Online 预览服务和直接下载选项</li>
+                <li><strong>文件操作功能</strong>：每个文件都有预览和下载按钮，下载功能已优化，支持认证访问，通过 AList API 获取认证下载链接，解决了直接链接的权限问题</li>
+                <li><strong>功能组管理</strong>：在刷新按钮左侧新增"功能"按钮，点击后弹出功能组对话框，采用标签页设计便于后续功能扩展</li>
+                <li><strong>文件夹管理</strong>：在功能组中提供新建文件夹和删除文件夹功能，支持批量选择删除，包含完整的认证和错误处理机制</li>
+                <li><strong>文件删除功能</strong>：在功能组中新增删除文件标签页，支持批量选择文件进行删除，包含确认提示和错误处理</li>
+                <li><strong>上传功能整合</strong>：将文件上传功能从头部工具栏移至功能组对话框中，提供更统一的操作体验</li>
             </ul>
+            
+            <h2>🗂️ 功能组说明</h2>
+            <p>功能组对话框采用标签页设计，包含以下三个功能模块：</p>
+            <ul>
+                <li><strong>📁 文件夹管理</strong>：新建和删除文件夹功能</li>
+                <ul>
+                    <li>新建文件夹：支持输入文件夹名称、回车快速创建、认证创建、状态提示和错误处理</li>
+                    <li>删除文件夹：支持批量选择文件夹、确认提示、认证删除、错误处理、实时显示选中数量</li>
+                </ul>
+                <li><strong>🗑️ 删除文件</strong>：批量选择和删除文件功能</li>
+                <ul>
+                    <li>支持批量选择文件进行删除</li>
+                    <li>提供确认提示避免误删</li>
+                    <li>包含完整的认证和错误处理机制</li>
+                    <li>实时显示选中文件数量</li>
+                </ul>
+                <li><strong>📤 上传文件</strong>：文件和文件夹上传功能</li>
+                <ul>
+                    <li>支持多种上传方式：拖拽上传、文件选择、文件夹上传</li>
+                    <li>提供上传模式选择和配置选项</li>
+                    <li>实时显示上传进度</li>
+                    <li>优化了界面布局，提供更好的用户体验</li>
+                </ul>
+            </ul>
+            
+            <h2>📖 文件预览功能</h2>
+            <p>支持多种文件类型的预览：</p>
+            <ul>
+                <li><strong>图片文件</strong>：JPG、PNG、GIF、BMP、WebP 等格式的直接预览</li>
+                <li><strong>视频文件</strong>：MP4、AVI、MOV、WMV 等格式的在线播放</li>
+                <li><strong>音频文件</strong>：MP3、WAV、FLAC、AAC 等格式的在线播放</li>
+                <li><strong>文本文件</strong>：TXT、LOG、JSON、XML、CSS、JS 等格式的文本内容显示</li>
+                <li><strong>Markdown 文件</strong>：MD 格式文件支持 HTML 渲染显示，包括标题、粗体、斜体、代码、链接和列表等格式</li>
+                <li><strong>PDF 文件</strong>：通过 PDF.js 实现在线预览</li>
+                <li><strong>Office 文档</strong>：Word、Excel、PowerPoint 文件通过 Microsoft Office Online 预览服务实现在线预览</li>
+                <li><strong>EPUB 电子书</strong>：通过 EPUB.js 实现在线阅读</li>
+            </ul>
+            <p>预览功能结合了 AList API 和多种在线预览服务，为用户提供便捷的文件查看体验。</p>
+            
+            <h2>🔧 文件操作功能</h2>
+        <p>每个文件都提供以下操作：</p>
+        <ul>
+            <li><strong>预览按钮</strong>：点击可在弹窗中预览文件内容</li>
+            <li><strong>下载按钮</strong>：点击可安全下载文件到本地，支持认证访问</li>
+        </ul>
+        <p>操作按钮位于文件列表中每个文件项的右侧，方便用户快速访问。下载功能已优化，通过 AList API 获取认证下载链接，解决了直接链接的权限问题。</p>
             
             <h2>📝 核心文件修改</h2>
             <ul>
