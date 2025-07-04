@@ -421,7 +421,8 @@ export let plugin;
             const alistLink = `alist://${encodeURIComponent(filePath)}`;
             
             // 创建引用块格式，避免与思源笔记查询嵌入块冲突
-            const blockContent = `> 📁 **AList 文件**: [${file.name}](${alistLink})\n> 📂 **文件路径**: \`${filePath}\`\n> 🔗 点击链接预览文件`;
+            // 使用简化的格式，只显示文件名和AList图标
+            const blockContent = `> 🅰️ **AList 文件**: [${file.name}](${alistLink})`;
             
             console.log('Generated AList link:', alistLink);
             console.log('Block content:', blockContent);
