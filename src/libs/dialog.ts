@@ -26,6 +26,11 @@ export const inputDialog = (args: {
         width: args.width ?? "520px",
         height: args.height
     });
+    
+    // 设置更高的z-index确保对话框显示在最上层
+    if (dialog.element) {
+        dialog.element.style.zIndex = '10000';
+    }
     const target: HTMLTextAreaElement = dialog.element.querySelector(".b3-dialog__content>div.ft__breakword>textarea");
     const btnsElement = dialog.element.querySelectorAll(".b3-button");
     btnsElement[0].addEventListener("click", () => {

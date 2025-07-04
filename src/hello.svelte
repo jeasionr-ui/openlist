@@ -36,7 +36,7 @@ export let plugin;
     let isCreatingFolder = false;
     let selectedFolders = new Set();
     let isDeletingFolders = false;
-    let selectedFiles = new Set();
+    let selectedFiles = new Set<string>();
     let isDeletingFiles = false;
 
     // 上传标签页相关变量
@@ -77,6 +77,8 @@ export let plugin;
         const username = plugin.settingUtils.get("username");
         const password = plugin.settingUtils.get("password");
         const rootPath = plugin.settingUtils.get("rootPath") || "/";
+        // 获取上次访问的路径，如果没有则使用根路径
+        const lastPath = plugin.settingUtils.get("lastPath") || rootPath;
 
         if (!serverUrl || !username || !password) {
             error = "请先在设置中配置 AList 服务器信息";
@@ -90,7 +92,7 @@ export let plugin;
             const loginResponse = await plugin.loginToAList(serverUrl, username, password);
             token = loginResponse.token;
             isLoggedIn = true;
-            currentPath = rootPath;
+            currentPath = lastPath;
             await loadFiles(currentPath);
         } catch (err) {
             console.error("Login failed:", err);
@@ -143,6 +145,8 @@ export let plugin;
 
             files = data.data.content || [];
             currentPath = path;
+            // 保存当前路径到设置中，以便下次打开时恢复
+            await plugin.settingUtils.setAndSave("lastPath", path);
         } catch (err) {
             console.error("Load files failed:", err);
             error = `加载文件失败: ${err.message || '未知错误'}`;
@@ -759,6 +763,88 @@ export let plugin;
     /**
      * 删除选中的文件
      */
+    /**
+     * 重命名选中的文件
+     */
+    async function renameSelectedFile() {
+        if (selectedFiles.size === 0) {
+            error = "请选择要重命名的文件";
+            return;
+        }
+
+        if (selectedFiles.size > 1) {
+            error = "重命名操作只能选择一个文件";
+            return;
+        }
+
+        const fileName = Array.from(selectedFiles)[0];
+        
+        // 使用inputDialog替换prompt
+        const { inputDialog } = await import('./libs/dialog');
+        
+        inputDialog({
+            title: "重命名文件",
+            placeholder: "请输入新的文件名",
+            defaultText: fileName,
+            confirm: async (newName) => {
+                 const newFileName = newName as string;
+                 if (!newFileName || newFileName === fileName) {
+                     return;
+                 }
+                 
+                 if (!newFileName.trim()) {
+                     error = "文件名不能为空";
+                     return;
+                 }
+
+                 isDeletingFiles = true; // 复用删除状态变量
+                 error = "";
+
+                 try {
+                     const serverUrl = plugin.settingUtils.get("serverUrl");
+                     const oldPath = currentPath === "/" ? `/${fileName}` : `${currentPath}/${fileName}`;
+                     
+                     const response = await fetch(`${serverUrl}/api/fs/rename`, {
+                         method: 'POST',
+                         headers: {
+                             'Content-Type': 'application/json',
+                             'Authorization': token
+                         },
+                         body: JSON.stringify({
+                             name: newFileName.trim(),
+                             path: oldPath
+                         })
+                     });
+                     
+                     if (!response.ok) {
+                         throw new Error(`重命名文件失败: ${response.status}`);
+                     }
+                     
+                     const result = await response.json();
+                     if (result.code !== 200) {
+                         throw new Error(result.message || '重命名文件失败');
+                     }
+                     
+                     // 刷新文件列表
+                     await loadFiles(currentPath);
+                     
+                     // 显示成功提示
+                     await pushMsg(`文件重命名成功: ${fileName} → ${newFileName.trim()}`);
+                     selectedFiles.clear();
+                    
+                } catch (err) {
+                    console.error("Rename file failed:", err);
+                    error = `重命名文件失败: ${err.message || '未知错误'}`;
+                } finally {
+                    isDeletingFiles = false;
+                }
+            },
+            cancel: () => {
+                // 用户取消操作
+            }
+        });
+    }
+
     async function deleteSelectedFiles() {
         if (selectedFiles.size === 0) {
             error = "请选择要删除的文件";
@@ -1453,7 +1539,7 @@ export let plugin;
                         class:active={activeTab === "file"}
                         on:click={() => switchTab("file")}
                     >
-                        🗑️ 删除文件
+                        文件管理
                     </button>
                     <button 
                         class="tab-btn" 
@@ -1544,10 +1630,7 @@ export let plugin;
                         </div>
                     {:else if activeTab === "file"}
                         <div class="file-management">
-                            <!-- 删除文件 -->
                             <div class="function-section">
-                                <h4>🗑️ 删除文件</h4>
-                                <p class="section-desc">选择要删除的文件，然后点击删除按钮</p>
                                 
                                 <div class="file-selection">
                                     {#if files.filter(f => !f.is_dir).length === 0}
@@ -1571,17 +1654,29 @@ export let plugin;
                                         {#if selectedFiles.size > 0}
                                             <div class="delete-actions">
                                                 <p class="selected-count">已选择 {selectedFiles.size} 个文件</p>
-                                                <button 
-                                                    class="b3-button b3-button--danger"
-                                                    on:click={deleteSelectedFiles}
-                                                    disabled={isDeletingFiles}
-                                                >
-                                                    {#if isDeletingFiles}
-                                                        删除中...
-                                                    {:else}
-                                                        🗑️ 删除选中的文件
-                                                    {/if}
-                                                </button>
+                                                <div class="file-action-buttons">
+                                                    <button 
+                                                        class="b3-button"
+                                                        on:click={deleteSelectedFiles}
+                                                        disabled={isDeletingFiles}
+                                                        style="background-color: #f44336; color: white; margin-right: 8px;"
+                                                    >
+                                                        {#if isDeletingFiles}
+                                                            删除中...
+                                                        {:else}
+                                                            删除选中
+                                                        {/if}
+                                                    </button>
+                                                    <button 
+                                                        class="b3-button"
+                                                        on:click={renameSelectedFile}
+                                                        disabled={isDeletingFiles || selectedFiles.size !== 1}
+                                                        style="background-color: #2196F3; color: white;"
+                                                        title={selectedFiles.size > 1 ? "重命名操作只能选择一个文件" : "重命名选中的文件"}
+                                                    >
+                                                        改文件名
+                                                    </button>
+                                                </div>
                                             </div>
                                         {/if}
                                     {/if}
@@ -2559,6 +2654,16 @@ export let plugin;
         margin: 0 0 8px 0;
         font-size: 12px;
         color: var(--b3-theme-on-surface-light);
+    }
+    
+    .file-action-buttons {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+    
+    .file-action-buttons .b3-button {
+        flex-shrink: 0;
     }
     
     .function-error {
