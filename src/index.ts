@@ -176,6 +176,21 @@ export default class PluginSample extends Plugin {
                 }
             }
         });
+        
+        // 添加路径记忆设置项
+        this.settingUtils.addItem({
+            key: "lastPath",
+            value: "/",
+            type: "textinput",
+            title: "上次访问路径",
+            description: "记录上次访问的文件夹路径，用于下次打开时恢复位置",
+            action: {
+                callback: () => {
+                    let value = this.settingUtils.takeAndSave("lastPath");
+                    console.log("Last path:", value);
+                }
+            }
+        });
 
         this.settingUtils.addItem({
             key: "hint",
@@ -367,13 +382,16 @@ export default class PluginSample extends Plugin {
                 throw new Error('AList 服务器地址未配置，请检查设置');
             }
             
-            // 验证 token 有效性，如果无效则重新登录
-            if (!token || !(await this.validateToken(serverUrl, token))) {
-                console.log('Token 无效或不存在，尝试重新登录...');
+            // 检查 token 是否存在且未过期
+            const { token: savedToken } = await this.getTokenData();
+            if (!savedToken || await this.isTokenExpired()) {
+                console.log('Token 无效或已过期，尝试重新登录...');
                 token = await this.refreshToken();
                 if (!token) {
                     throw new Error('无法获取有效的访问令牌，请检查登录信息');
                 }
+            } else {
+                token = savedToken;
             }
             
             // 通过 AList API 获取文件信息
@@ -669,6 +687,44 @@ export default class PluginSample extends Plugin {
     }
 
     /**
+     * 获取token数据
+     */
+    private async getTokenData(): Promise<{token: string | null, tokenExpiry: string | null}> {
+        const tokenData = await this.loadData('token.json') || {};
+        return {
+            token: tokenData.token || null,
+            tokenExpiry: tokenData.tokenExpiry || null
+        };
+    }
+
+    /**
+     * 保存token数据
+     */
+    private async saveTokenData(token: string, tokenExpiry: string): Promise<void> {
+        await this.saveData('token.json', {
+            token: token,
+            tokenExpiry: tokenExpiry
+        });
+    }
+
+    /**
+     * 检查 token 是否过期
+     */
+    private async isTokenExpired(): Promise<boolean> {
+        const { tokenExpiry } = await this.getTokenData();
+        if (!tokenExpiry) {
+            return true; // 如果没有过期时间记录，认为已过期
+        }
+        
+        const now = Date.now();
+        const expiryTime = parseInt(tokenExpiry);
+        
+        // 提前5分钟刷新token，避免在使用过程中过期
+        const bufferTime = 5 * 60 * 1000; // 5分钟
+        return now >= (expiryTime - bufferTime);
+    }
+
+    /**
      * 刷新 token（重新登录）
      */
     private async refreshToken(): Promise<string | null> {
@@ -683,8 +739,12 @@ export default class PluginSample extends Plugin {
             
             const loginResponse = await this.loginToAList(serverUrl, username, password);
             if (loginResponse && loginResponse.token) {
-                // 保存新的 token 到设置中
-                await this.settingUtils.setAndSave("token", loginResponse.token);
+                // 设置token过期时间（AList token通常有效期为24小时）
+                const expiryTime = Date.now() + (24 * 60 * 60 * 1000); // 24小时后过期
+                
+                // 保存token数据到独立文件
+                await this.saveTokenData(loginResponse.token, expiryTime.toString());
+                
                 console.log('Token 刷新成功');
                 return loginResponse.token;
             }
@@ -746,8 +806,12 @@ export default class PluginSample extends Plugin {
             showMessage("正在测试连接...", 2000, "info");
             const response = await this.loginToAList(serverUrl, username, password);
             if (response && response.token) {
-                // 保存 token 到设置中
-                await this.settingUtils.setAndSave("token", response.token);
+                // 设置token过期时间（AList token通常有效期为24小时）
+                const expiryTime = Date.now() + (24 * 60 * 60 * 1000); // 24小时后过期
+                
+                // 保存token数据到独立文件
+                await this.saveTokenData(response.token, expiryTime.toString());
+                
                 showMessage("连接成功！", 3000, "info");
             } else {
                 showMessage("连接失败：无效的响应", 3000, "error");
