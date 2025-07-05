@@ -59,7 +59,7 @@ export default class PluginSample extends Plugin {
                 position: "RightTop",
                 size: { width: 300, height: 0 },
                 icon: "iconFolder",
-                title: "AList 文件浏览器",
+                title: "AList File Browser",
                 hotkey: "⌥⌘A",
             },
             data: {
@@ -92,19 +92,19 @@ export default class PluginSample extends Plugin {
             key: "serverUrl",
             value: "http://localhost:5244",
             type: "textinput",
-            title: "AList 服务器地址",
-            description: "AList 服务器的完整地址，例如：http://localhost:5244",
+            title: "AList Server URL",
+            description: "Complete address of AList server, e.g.: http://localhost:5244",
             action: {
                 callback: async () => {
                     let value = await this.settingUtils.takeAndSave("serverUrl");
                     // URL 验证
                     if (value && !this.validateServerUrl(value)) {
-                        showMessage("⚠️ 服务器地址格式不正确，请输入有效的URL（如：http://localhost:5244）", 3000, "error");
+                        showMessage("⚠️ Invalid server URL format, please enter a valid URL (e.g.: http://localhost:5244)", 3000, "error");
                         return;
                     }
                     console.log("Server URL:", value);
                     if (value) {
-                        showMessage("✅ 服务器地址已保存", 2000, "info");
+                        showMessage("✅ Server URL saved", 2000, "info");
                     }
                 }
             }
@@ -113,8 +113,8 @@ export default class PluginSample extends Plugin {
             key: "username",
             value: "",
             type: "textinput",
-            title: "用户名",
-            description: "AList 登录用户名",
+            title: "Username",
+            description: "AList login username",
             action: {
                 callback: () => {
                     let value = this.settingUtils.takeAndSave("username");
@@ -126,8 +126,8 @@ export default class PluginSample extends Plugin {
             key: "password",
             value: "",
             type: "textinput",
-            title: "密码",
-            description: "AList 登录密码",
+            title: "Password",
+            description: "AList login password",
             action: {
                 callback: () => {
                     let value = this.settingUtils.takeAndSave("password");
@@ -139,8 +139,8 @@ export default class PluginSample extends Plugin {
             key: "rootPath",
             value: "/",
             type: "textinput",
-            title: "根路径",
-            description: "AList 文件浏览的根路径，默认为根目录",
+            title: "Root Path",
+            description: "Root path for AList file browsing, default is root directory",
             placeholder: "/",
             action: {
                 callback: () => {
@@ -153,8 +153,8 @@ export default class PluginSample extends Plugin {
             key: "autoLogin",
             value: true,
             type: "checkbox",
-            title: "自动登录",
-            description: "启动时自动登录到 AList 服务器",
+            title: "Auto Login",
+            description: "Automatically login to AList server on startup",
             action: {
                 callback: () => {
                     let value = !this.settingUtils.get("autoLogin");
@@ -167,10 +167,10 @@ export default class PluginSample extends Plugin {
             key: "testConnection",
             value: "",
             type: "button",
-            title: "测试连接",
-            description: "测试与 AList 服务器的连接",
+            title: "Test Connection",
+            description: "Test connection to AList server",
             button: {
-                label: "测试连接",
+                label: "Test Connection",
                 callback: () => {
                     this.testAListConnection();
                 }
@@ -182,8 +182,8 @@ export default class PluginSample extends Plugin {
             key: "lastPath",
             value: "/",
             type: "textinput",
-            title: "上次访问路径",
-            description: "记录上次访问的文件夹路径，用于下次打开时恢复位置",
+            title: "Last Visited Path",
+            description: "Record last visited folder path for restoration on next open",
             action: {
                 callback: () => {
                     let value = this.settingUtils.takeAndSave("lastPath");
@@ -196,8 +196,8 @@ export default class PluginSample extends Plugin {
             key: "hint",
             value: "",
             type: "hint",
-            title: "使用说明",
-            description: "配置完成后，AList 文件浏览器将显示在侧边栏中。请确保 AList 服务器正在运行并且网络连接正常。",
+            title: "Usage Instructions",
+            description: "After configuration, AList file browser will be displayed in the sidebar. Please ensure AList server is running and network connection is normal.",
         });
 
         try {
@@ -208,7 +208,7 @@ export default class PluginSample extends Plugin {
 
 
         this.protyleSlash = [{
-            filter: ["insert emoji 😊", "插入表情 😊", "crbqwx"],
+            filter: ["insert emoji 😊", "insert emoji 😊", "crbqwx"],
             html: `<div class="b3-list-item__first"><span class="b3-list-item__text">${this.i18n.insertEmoji}</span><span class="b3-list-item__meta">😊</span></div>`,
             id: "insertEmoji",
             callback(protyle: Protyle) {
@@ -285,13 +285,13 @@ export default class PluginSample extends Plugin {
         (window as any).testAListBlock = () => {
             console.log('Testing AList block creation...');
             const blockContent = `{{{row
-📁 AList 文件: [测试文件.txt](alist://${encodeURIComponent('/test/测试文件.txt')})
-文件路径: \`/test/测试文件.txt\`
-点击链接预览文件
+📁 AList File: [test-file.txt](alist://${encodeURIComponent('/test/test-file.txt')})
+File Path: \`/test/test-file.txt\`
+Click link to preview file
 }}}`;
             navigator.clipboard.writeText(blockContent).then(() => {
                 console.log('Test block content copied to clipboard:', blockContent);
-                alert('测试块内容已复制到剪贴板，请粘贴到思源笔记中测试');
+                alert('Test block content copied to clipboard, please paste into SiYuan to test');
             });
         };
     }
@@ -362,12 +362,12 @@ export default class PluginSample extends Plugin {
         // 验证文件路径格式
         if (!filePath || !filePath.startsWith('/')) {
             console.error('Invalid AList file path:', filePath);
-            showMessage(`无效的文件路径: ${filePath}`, 3000, 'error');
+            showMessage(`Invalid file path: ${filePath}`, 3000, 'error');
             return;
         }
         
-        showMessage('正在预览文件...', 2000, 'info');
-        await this.previewAListFile(filePath, linkText || '文件');
+        showMessage('Previewing file...', 2000, 'info');
+        await this.previewAListFile(filePath, linkText || 'File');
     }
 
     /**
@@ -379,16 +379,16 @@ export default class PluginSample extends Plugin {
             let token = this.settingUtils.get("token");
             
             if (!serverUrl) {
-                throw new Error('AList 服务器地址未配置，请检查设置');
+                throw new Error('AList server URL not configured, please check settings');
             }
             
             // 检查 token 是否存在且未过期
             const { token: savedToken } = await this.getTokenData();
             if (!savedToken || await this.isTokenExpired()) {
-                console.log('Token 无效或已过期，尝试重新登录...');
+                console.log('Token invalid or expired, trying to re-login...');
                 token = await this.refreshToken();
                 if (!token) {
-                    throw new Error('无法获取有效的访问令牌，请检查登录信息');
+                    throw new Error('Unable to get valid access token, please check login credentials');
                 }
             } else {
                 token = savedToken;
@@ -413,7 +413,7 @@ export default class PluginSample extends Plugin {
             
             const result = await response.json();
             if (result.code !== 200) {
-                throw new Error(result.message || '获取文件信息失败');
+                throw new Error(result.message || 'Failed to get file information');
             }
             
             const fileInfo = result.data;
@@ -431,8 +431,8 @@ export default class PluginSample extends Plugin {
             // 打开预览对话框
             this.showAListPreviewDialog(file, fileInfo.raw_url || `${serverUrl}/d${filePath}`);
         } catch (error) {
-            console.error('预览 AList 文件失败:', error);
-            showMessage(`预览失败: ${error.message}`, 3000, 'error');
+            console.error('Failed to preview AList file:', error);
+            showMessage(`Preview failed: ${error.message}`, 3000, 'error');
         }
     }
 
@@ -450,7 +450,7 @@ export default class PluginSample extends Plugin {
         
         // 使用 simpleDialog 代替 svelteDialog 避免 component.$destroy() 错误
         const { dialog, close } = simpleDialog({
-            title: `预览: ${file.name}`,
+            title: `Preview: ${file.name}`,
             width: this.isMobile ? "92vw" : "80vw",
             height: this.isMobile ? "80vh" : "70vh",
             ele: container,
@@ -486,7 +486,7 @@ export default class PluginSample extends Plugin {
                 <div class="obj-box hope-stack" style="text-align: center; padding: 20px; width: 100%; height: 100%;">
                     <video controls style="max-width: 100%; max-height: 100%;">
                         <source src="${fileUrl}" type="video/mp4">
-                        您的浏览器不支持视频播放。
+                        Your browser does not support video playback.
                     </video>
                 </div>
             `;
@@ -496,7 +496,7 @@ export default class PluginSample extends Plugin {
                 <div class="obj-box hope-stack" style="text-align: center; padding: 20px;">
                     <audio controls style="width: 100%; max-width: 500px;">
                         <source src="${fileUrl}" type="audio/mpeg">
-                        您的浏览器不支持音频播放。
+                        Your browser does not support audio playback.
                     </audio>
                 </div>
             `;
@@ -508,10 +508,10 @@ export default class PluginSample extends Plugin {
                     <iframe 
                         src="https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodedUrl}" 
                         style="width: 100%; flex: 1; border: none;"
-                        title="PDF 预览">
+                        title="PDF Preview">
                     </iframe>
                     <div style="margin-top: 10px; text-align: center; color: #666; flex-shrink: 0;">
-                        <small>如果预览失败，请尝试 <a href="${fileUrl}" target="_blank" style="color: var(--b3-theme-primary);">直接下载文件</a> 查看</small>
+                        <small>If preview fails, please try <a href="${fileUrl}" target="_blank" style="color: var(--b3-theme-primary);">downloading the file directly</a> to view</small>
                     </div>
                 </div>
             `;
@@ -523,10 +523,10 @@ export default class PluginSample extends Plugin {
                     <iframe 
                         src="https://view.officeapps.live.com/op/view.aspx?src=${encodedUrl}" 
                         style="width: 100%; flex: 1; border: none;"
-                        title="Office 文档预览">
+                        title="Office Document Preview">
                     </iframe>
                     <div style="margin-top: 10px; text-align: center; color: #666; flex-shrink: 0;">
-                        <small>如果预览失败，请尝试直接下载文件查看</small>
+                        <small>If preview fails, please try downloading the file directly to view</small>
                     </div>
                 </div>
             `;
@@ -535,7 +535,7 @@ export default class PluginSample extends Plugin {
             previewHTML = `
                 <div class="obj-box hope-stack" style="padding: 20px; width: 100%; height: 100%; flex-direction: column;">
                     <div id="markdown-content" style="flex: 1; overflow: auto; width: 100%; background: var(--b3-theme-background); padding: 20px; border-radius: 6px; font-family: var(--b3-font-family);">
-                        <div style="text-align: center; color: #666;">正在加载文件内容...</div>
+                        <div style="text-align: center; color: #666;">Loading file content...</div>
                     </div>
                 </div>
             `;
@@ -558,15 +558,15 @@ export default class PluginSample extends Plugin {
                             }
                         }
                     } else {
-                        throw new Error('文件加载失败');
+                        throw new Error('Failed to load file');
                     }
                 } catch (error) {
                     const contentDiv = container.querySelector('#markdown-content');
                     if (contentDiv) {
                         contentDiv.innerHTML = `
                             <div style="text-align: center; color: #f56565;">
-                                <p>文件加载失败</p>
-                                <a href="${fileUrl}" target="_blank" style="color: var(--b3-theme-primary);">点击下载文件</a>
+                                <p>Failed to load file</p>
+                                <a href="${fileUrl}" target="_blank" style="color: var(--b3-theme-primary);">Click to download file</a>
                             </div>
                         `;
                     }
@@ -578,8 +578,8 @@ export default class PluginSample extends Plugin {
                 <div class="obj-box hope-stack" style="text-align: center; padding: 40px;">
                     <div style="font-size: 48px; margin-bottom: 16px;">📄</div>
                     <h3>${fileName}</h3>
-                    <p>此文件类型暂不支持预览</p>
-                    <a href="${fileUrl}" target="_blank" style="color: var(--b3-theme-primary); text-decoration: none;">点击下载文件</a>
+                    <p>This file type is not supported for preview</p>
+                    <a href="${fileUrl}" target="_blank" style="color: var(--b3-theme-primary); text-decoration: none;">Click to download file</a>
                 </div>
             `;
         }
@@ -681,7 +681,7 @@ export default class PluginSample extends Plugin {
             const result = await response.json();
             return result.code === 200;
         } catch (error) {
-            console.error('Token 验证失败:', error);
+            console.error('Token validation failed:', error);
             return false;
         }
     }
@@ -734,7 +734,7 @@ export default class PluginSample extends Plugin {
             const password = this.settingUtils.get("password");
             
             if (!serverUrl || !username || !password) {
-                throw new Error('登录信息不完整');
+                throw new Error('Incomplete login information');
             }
             
             const loginResponse = await this.loginToAList(serverUrl, username, password);
@@ -745,13 +745,13 @@ export default class PluginSample extends Plugin {
                 // 保存token数据到独立文件
                 await this.saveTokenData(loginResponse.token, expiryTime.toString());
                 
-                console.log('Token 刷新成功');
+                console.log('Token refresh successful');
                 return loginResponse.token;
             }
             
             return null;
         } catch (error) {
-            console.error('Token 刷新失败:', error);
+            console.error('Token refresh failed:', error);
             return null;
         }
     }
@@ -798,12 +798,12 @@ export default class PluginSample extends Plugin {
         const password = this.settingUtils.get("password");
 
         if (!serverUrl || !username || !password) {
-            showMessage("请先配置服务器地址、用户名和密码", 3000, "error");
+            showMessage("Please configure server URL, username and password first", 3000, "error");
             return;
         }
 
         try {
-            showMessage("正在测试连接...", 2000, "info");
+            showMessage("Testing connection...", 2000, "info");
             const response = await this.loginToAList(serverUrl, username, password);
             if (response && response.token) {
                 // 设置token过期时间（AList token通常有效期为24小时）
@@ -812,13 +812,13 @@ export default class PluginSample extends Plugin {
                 // 保存token数据到独立文件
                 await this.saveTokenData(response.token, expiryTime.toString());
                 
-                showMessage("连接成功！", 3000, "info");
+                showMessage("Connection successful!", 3000, "info");
             } else {
-                showMessage("连接失败：无效的响应", 3000, "error");
+                showMessage("Connection failed: Invalid response", 3000, "error");
             }
         } catch (error) {
             console.error("AList connection test failed:", error);
-            showMessage(`连接失败：${error.message || '未知错误'}`, 3000, "error");
+            showMessage(`Connection failed: ${error.message || 'Unknown error'}`, 3000, "error");
         }
     }
 
@@ -844,7 +844,7 @@ export default class PluginSample extends Plugin {
 
         const data = await response.json();
         if (data.code !== 200) {
-            throw new Error(data.message || '登录失败');
+            throw new Error(data.message || 'Login failed');
         }
 
         return data.data;
@@ -858,7 +858,7 @@ export default class PluginSample extends Plugin {
 
     private showDialog() {
         svelteDialog({
-            title: "AList 文件浏览器",
+            title: "AList File Browser",
             width: this.isMobile ? "92vw" : "720px",
             constructor: (container: HTMLElement) => {
                 return new AListBrowser({

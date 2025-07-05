@@ -25,8 +25,9 @@ If this plugin helps you, welcome to support the developer:
 - ⭐ **Free to Use**: Plugin is free, sponsorship is only for development motivation
 
 <div align="center">
-  <img src="./doc/AliPay.JPG" alt="Alipay Sponsorship" width="180" style="margin: 10px;">
-  <img src="./doc/WeChat.JPG" alt="WeChat Sponsorship" width="180" style="margin: 10px;">
+  <img src="./AliPay.JPG" alt="Alipay Sponsorship" width="180" style="margin: 10px;">
+  <img src="./WeChat.JPG" alt="WeChat Sponsorship" width="180" style="margin: 10px;">
+    <img src="./SOL.JPG" alt="SQL Sponsorship" width="180" style="margin: 10px;">
   <br>
   <small>Scan to support development ❤️</small>
 </div>

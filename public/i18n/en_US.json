@@ -1,20 +1,140 @@
 {
-    "addTopBarIcon": "Add a top bar icon by plugin",
+    "title": "AList File Browser",
     "cancel": "Cancel",
     "save": "Save",
-    "byeMenu": "Bye, Menu!",
-    "helloPlugin": "Hello, Plugin!",
-    "byePlugin": "Bye, Plugin!",
-    "showDialog": "Show dialog",
-    "removedData": "Data deleted",
-    "confirmRemove": "Confirm to delete the data in ${name}?",
-    "insertEmoji": "Insert Emoji",
-    "removeSpace": "Remove Space",
-    "getTab": "Print out all opened custom tabs in the debugger",
-    "name": "SiYuan",
-    "hello": {
-        "makesure": "Before using this template, please read the <a href=\"https://github.com/siyuan-note/plugin-sample\">offical sample</a>, make sure that you've known about the pipeline for plugin developing."
+    "loading": "Loading...",
+    "login": "Login",
+    "logout": "Logout",
+    "refresh": "Refresh",
+    "upload": "Upload",
+    "download": "Download",
+    "delete": "Delete",
+    "rename": "Rename",
+    "move": "Move",
+    "preview": "Preview",
+    "close": "Close",
+    "confirm": "Confirm",
+    "back": "Back",
+    "create": "Create",
+    "select": "Select",
+    "selectAll": "Select All",
+    "unselectAll": "Unselect All",
+    "retry": "Retry",
+    "clear": "Clear",
+    "test": "Test",
+    "embed": "Embed to Note",
+    
+    "settings": {
+        "serverUrl": {
+            "title": "AList Server URL",
+            "description": "Complete address of the AList server, e.g.: http://localhost:5244"
+        },
+        "username": {
+            "title": "Username",
+            "description": "AList login username"
+        },
+        "password": {
+            "title": "Password",
+            "description": "AList login password"
+        },
+        "rootPath": {
+            "title": "Root Path",
+            "description": "Root path for AList file browsing, defaults to root directory"
+        },
+        "autoLogin": {
+            "title": "Auto Login",
+            "description": "Automatically login to AList server on startup"
+        },
+        "testConnection": {
+            "title": "Test Connection",
+            "description": "Test connection to AList server",
+            "label": "Test Connection"
+        },
+        "lastPath": {
+            "title": "Last Visited Path",
+            "description": "Remember the last visited folder path to restore position on next open"
+        },
+        "usage": {
+            "title": "Usage Instructions",
+            "description": "After configuration, the AList file browser will be displayed in the sidebar. Please ensure the AList server is running and network connection is normal."
+        }
     },
-    "hintTitle":"About",
-    "hintDesc":"<a href='https://github.com/siyuan-note/plugin-sample-vite-svelte'>plugin-sample-vite-svelte</a><br>@frostime<br>@88250<br>@zxkmm"
+    
+    "errors": {
+        "configRequired": "Please configure AList server information in settings first",
+        "loginRequired": "Please login first",
+        "selectFiles": "Please select files to upload",
+        "selectFolders": "Please select folders to delete",
+        "selectFilesToRename": "Please select files to rename",
+        "selectSingleFileToRename": "Rename operation can only select one file",
+        "selectFilesToMove": "Please select files or folders to move",
+        "selectSingleItemToMove": "Move operation can only select one file or folder",
+        "selectTargetFolder": "Please select target folder",
+        "selectFoldersToMove": "Please select folders to move",
+        "selectSingleFolderToMove": "Move operation can only select one folder",
+        "selectFilesToDelete": "Please select files to delete",
+        "enterDownloadUrl": "Please enter download URL",
+        "enterFolderName": "Please enter folder name",
+        "fileNameRequired": "File name cannot be empty",
+        "invalidServerUrl": "⚠️ Invalid server URL format, please enter a valid URL (e.g.: http://localhost:5244)",
+        "networkError": "🌐 Network connection failed: Unable to connect to AList server, please check server address and network connection",
+        "authError": "🔐 Authentication failed: Incorrect username or password, please check login credentials",
+        "forbiddenError": "⛔ Access denied: Insufficient account permissions or account disabled",
+        "notFoundError": "❓ Server not found: Please check if AList server address is correct",
+        "timeoutError": "⏱️ Connection timeout: Server response timeout, please try again later",
+        "loginExpired": "🔐 Login expired: Please login to AList server again",
+        "accessDenied": "⛔ Access denied: No permission to access this path",
+        "pathNotFound": "📂 Path not found: The specified folder path does not exist",
+        "loadTimeout": "⏱️ Load timeout: Server response timeout, please try again later",
+        "unknownError": "❌ Unknown error, please check server configuration"
+    },
+    
+    "messages": {
+        "serverUrlSaved": "✅ Server URL saved",
+        "testingConnection": "Testing connection...",
+        "connectionSuccess": "Connection successful!",
+        "connectionFailed": "Connection failed: Invalid response",
+        "configFirst": "Please configure server URL, username and password first"
+    },
+    
+    "placeholders": {
+        "folderName": "Enter folder name",
+        "newFileName": "Please enter new file name",
+        "downloadUrls": "Please enter download URLs, one per line\nExample:\nhttps://example.com/file1.zip\nhttps://example.com/file2.pdf"
+    },
+    
+    "tooltips": {
+        "previewFile": "Preview file",
+        "downloadFile": "Download file",
+        "embedToNote": "Embed to note",
+        "selectFolder": "Select folder",
+        "selectFile": "Select file",
+        "pdfPreview": "PDF Preview",
+        "officePreview": "Office Document Preview",
+        "epubPreview": "EPUB Preview",
+        "moveSelectedFolders": "Move selected folders",
+        "renameSelectedFile": "Rename selected file",
+        "moveSelectedFiles": "Move selected files",
+        "retrySelectedTasks": "Retry selected offline download tasks",
+        "retryFailedTasks": "Retry all failed offline download tasks",
+        "clearSuccessTasks": "Clear all successful offline download tasks",
+        "clearCompletedTasks": "Clear all completed offline download tasks",
+        "unknownTask": "Unknown task"
+    },
+    
+    "tabs": {
+        "folder": "Folder",
+        "file": "File",
+        "upload": "Upload",
+        "task": "Task",
+        "online": "Online Upload",
+        "offline": "Offline Download"
+    },
+    
+    "dialogs": {
+        "renameFile": {
+            "title": "Rename File",
+            "placeholder": "Please enter new file name"
+        }
+    }
 }

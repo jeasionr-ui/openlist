@@ -1,12 +1,44 @@
 <!--
- AList 文件浏览器组件
+ AList File Browser Component
  Author: OpenList Plugin
- Description: 在思源笔记侧边栏中显示 AList 文件管理器
+ Description: Display AList file manager in SiYuan note sidebar
 -->
 <script lang="ts">
 import { onDestroy, onMount } from "svelte";
 import { pushMsg } from "./api";
 export let plugin;
+
+    // i18n support - use plugin's built-in i18n data
+    let i18nData = plugin.i18n || {};
+    
+    // i18n translation function
+    function t(key: string, params?: Record<string, any>): string {
+        const keys = key.split('.');
+        let value = i18nData;
+        
+        for (const k of keys) {
+            if (value && typeof value === 'object' && k in value) {
+                value = value[k];
+            } else {
+                console.warn(`i18n key not found: ${key}`);
+                return key; // return key as fallback
+            }
+        }
+        
+        if (typeof value !== 'string') {
+            console.warn(`i18n value is not string: ${key}`);
+            return key;
+        }
+        
+        // Replace parameters if provided
+        if (params) {
+            return value.replace(/\${(\w+)}/g, (match, paramKey) => {
+                return params[paramKey] || match;
+            });
+        }
+        
+        return value;
+    }
 
     let isLoading = false;
     let isLoggedIn = false;
@@ -23,13 +55,13 @@ export let plugin;
     let isUploading = false;
     let uploadProgress = 0;
 
-    // 预览相关变量
+    // Preview related variables
     let showPreview = false;
     let previewContent = "";
     let previewFile = null;
     let isLoadingPreview = false;
 
-    // 功能组相关变量
+    // Function group related variables
     let showFunctionGroup = false;
     let activeTab = "folder";
     let newFolderName = "";
@@ -39,29 +71,30 @@ export let plugin;
     let selectedFiles = new Set<string>();
     let isDeletingFiles = false;
 
-    // 上传标签页相关变量
-    let uploadTab = "online"; // "online" 或 "offline"
+    // Upload tab related variables
+    let uploadTab = "online"; // "online" or "offline"
     
-    // 离线下载相关变量
+    // Offline download related variables
     let downloadUrls = "";
     let isOfflineDownloading = false;
     
-    // 任务列表相关变量
+    // Task list related variables
     let tasks = [];
     let isLoadingTasks = false;
     
-    // 移动功能相关变量
+    // Move function related variables
     let showMoveDialog = false;
     let moveTargetPath = "/";
     let folderTree = [];
-    let expandedFolders = new Set(); // 记录展开的文件夹路径
+    let expandedFolders = new Set(); // Record expanded folder paths
     let isLoadingFolderTree = false;
     let isMoving = false;
     let allowOverwrite = false;
     let moveItem = null;
-    let loadingSubfolders = new Set(); // 记录正在加载子文件夹的路径 // 要移动的文件或文件夹信息
+    let loadingSubfolders = new Set(); // Record paths of subfolders being loaded // Information of file or folder to move
 
     onMount(async () => {
+        console.log('AList Browser component mounted with i18n data:', Object.keys(i18nData).length, 'keys');
         await initializeAList();
         setupFolderInput();
     });
@@ -71,7 +104,7 @@ export let plugin;
     });
 
     /**
-     * 初始化 AList 连接
+     * Initialize AList connection
      */
     async function initializeAList() {
         const autoLogin = plugin.settingUtils.get("autoLogin");
@@ -81,18 +114,18 @@ export let plugin;
     }
 
     /**
-     * 登录并加载文件列表
+     * Login and load file list
      */
     async function loginAndLoadFiles() {
         const serverUrl = plugin.settingUtils.get("serverUrl");
         const username = plugin.settingUtils.get("username");
         const password = plugin.settingUtils.get("password");
         const rootPath = plugin.settingUtils.get("rootPath") || "/";
-        // 获取上次访问的路径，如果没有则使用根路径
+        // Get last visited path, use root path if none
         const lastPath = plugin.settingUtils.get("lastPath") || rootPath;
 
         if (!serverUrl || !username || !password) {
-            error = "请先在设置中配置 AList 服务器信息";
+            error = t('errors.configRequired');
             return;
         }
 
@@ -102,26 +135,26 @@ export let plugin;
         try {
             const loginResponse = await plugin.loginToAList(serverUrl, username, password);
             token = loginResponse.token;
-            // 保存 token 到设置中，以便其他地方使用
+            // Save token to settings for use elsewhere
             await plugin.settingUtils.setAndSave("token", token);
             isLoggedIn = true;
             currentPath = lastPath;
             await loadFiles(currentPath);
         } catch (err) {
             console.error("Login failed:", err);
-            // 详细的错误分类和处理
+            // Detailed error classification and handling
             if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-                error = `🌐 网络连接失败: 无法连接到AList服务器，请检查服务器地址和网络连接`;
+                error = t('errors.networkError');
             } else if (err.message.includes('401') || err.message.includes('Unauthorized')) {
-                error = `🔐 认证失败: 用户名或密码错误，请检查登录凭据`;
+                error = t('errors.authError');
             } else if (err.message.includes('403') || err.message.includes('Forbidden')) {
-                error = `⛔ 访问被拒绝: 账户权限不足或被禁用`;
+                error = t('errors.forbiddenError');
             } else if (err.message.includes('404') || err.message.includes('Not Found')) {
-                error = `❓ 服务器未找到: 请检查AList服务器地址是否正确`;
+                error = t('errors.notFoundError');
             } else if (err.message.includes('timeout')) {
-                error = `⏱️ 连接超时: 服务器响应超时，请稍后重试`;
+                error = t('errors.timeoutError');
             } else {
-                error = `❌ 登录失败: ${err.message || '未知错误，请检查服务器配置'}`;
+                error = `❌ ${t('login')} ${t('errors.unknownError')}: ${err.message || t('errors.unknownError')}`;
             }
             isLoggedIn = false;
         } finally {
@@ -130,13 +163,13 @@ export let plugin;
     }
 
     /**
-     * 加载指定路径的文件列表
-     * @param {string} path - 文件路径
-     * @param {boolean} forceRefresh - 是否强制刷新，不使用缓存
+     * Load file list for specified path
+     * @param {string} path - File path
+     * @param {boolean} forceRefresh - Whether to force refresh, not using cache
      */
     async function loadFiles(path, forceRefresh = false) {
         if (!isLoggedIn || !token) {
-            error = "请先登录";
+            error = t('errors.loginRequired');
             return;
         }
 
@@ -166,32 +199,32 @@ export let plugin;
 
             const data = await response.json();
             if (data.code !== 200) {
-                throw new Error(data.message || '获取文件列表失败');
+                throw new Error(data.message || 'Failed to get file list');
             }
 
             files = data.data.content || [];
             currentPath = path;
-            // 保存当前路径到设置中，以便下次打开时恢复
+            // Save current path to settings for restoration on next open
             await plugin.settingUtils.setAndSave("lastPath", path);
         } catch (err) {
             console.error("Load files failed:", err);
-            // 详细的错误分类和处理
+            // Detailed error classification and handling
             if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-                error = `🌐 网络连接失败: 无法连接到AList服务器，请检查网络连接`;
+                error = t('errors.networkError');
             } else if (err.message.includes('401') || err.message.includes('Unauthorized')) {
-                error = `🔐 登录已过期: 请重新登录AList服务器`;
+                error = t('errors.loginExpired');
                 isLoggedIn = false;
                 token = "";
             } else if (err.message.includes('403') || err.message.includes('Forbidden')) {
-                error = `⛔ 访问被拒绝: 没有权限访问此路径`;
+                error = t('errors.accessDenied');
                 isLoggedIn = false;
                 token = "";
             } else if (err.message.includes('404') || err.message.includes('Not Found')) {
-                error = `📂 路径不存在: 指定的文件夹路径不存在`;
+                error = t('errors.pathNotFound');
             } else if (err.message.includes('timeout')) {
-                error = `⏱️ 加载超时: 服务器响应超时，请稍后重试`;
+                error = t('errors.loadTimeout');
             } else {
-                error = `❌ 加载失败: ${err.message || '未知错误，请检查服务器状态'}`;
+                error = `❌ ${t('loading')} ${t('errors.unknownError')}: ${err.message || t('errors.unknownError')}`;
             }
         } finally {
             isLoading = false;
@@ -199,7 +232,7 @@ export let plugin;
     }
 
     /**
-     * 进入文件夹
+     * Enter folder
      */
     async function enterFolder(folderName) {
         const newPath = currentPath === "/" ? `/${folderName}` : `${currentPath}/${folderName}`;
@@ -207,7 +240,7 @@ export let plugin;
     }
 
     /**
-     * 返回上级目录
+     * Go back to parent directory
      */
     async function goBack() {
         if (currentPath === "/") return;
@@ -216,7 +249,7 @@ export let plugin;
     }
 
     /**
-     * 格式化文件大小
+     * Format file size
      */
     function formatFileSize(bytes) {
         if (bytes === 0) return '0 B';
@@ -227,7 +260,7 @@ export let plugin;
     }
 
     /**
-     * 格式化日期
+     * Format date
      */
     function formatDate(dateString) {
         const date = new Date(dateString);
@@ -235,7 +268,7 @@ export let plugin;
     }
 
     /**
-     * 获取文件图标
+     * Get file icon
      */
     function getFileIcon(file) {
         if (file.is_dir) {
@@ -263,7 +296,7 @@ export let plugin;
 
 
     /**
-     * 关闭上传对话框
+     * Close upload dialog
      */
     function closeUploadDialog() {
         showUpload = false;
@@ -273,7 +306,7 @@ export let plugin;
     }
 
     /**
-     * 处理文件选择
+     * Handle file selection
      */
     function handleFileSelect(event) {
         const files = Array.from(event.target.files);
@@ -281,7 +314,7 @@ export let plugin;
     }
 
     /**
-     * 处理文件夹选择
+     * Handle folder selection
      */
     function handleFolderSelect(event) {
         const files = Array.from(event.target.files);
@@ -310,7 +343,7 @@ export let plugin;
      */
     async function uploadFilesToAList() {
         if (uploadFiles.length === 0) {
-            error = "请选择要上传的文件";
+            error = t('errors.selectFiles');
             return;
         }
 
@@ -345,12 +378,12 @@ export let plugin;
                 });
 
                 if (!response.ok) {
-                    throw new Error(`上传失败: ${response.status} ${response.statusText}`);
+                    throw new Error(`${t('upload')} failed: ${response.status} ${response.statusText}`);
                 }
 
                 const result = await response.json();
                 if (result.code !== 200) {
-                    throw new Error(result.message || '上传失败');
+                    throw new Error(result.message || `${t('upload')} failed`);
                 }
 
                 uploadProgress = Math.round(((i + 1) / uploadFiles.length) * 100);
@@ -360,12 +393,12 @@ export let plugin;
             await loadFiles(currentPath, true);
             
             // 显示成功提示和刷新提醒
-            await pushMsg(`成功上传 ${uploadFiles.length} 个文件！由于 AList 后台传输特性，如果文件未立即显示，请点击刷新按钮。`);
+            await pushMsg(`Successfully uploaded ${uploadFiles.length} files! Due to AList background transfer characteristics, if files are not displayed immediately, please click the refresh button.`);
             closeUploadDialog();
             
         } catch (err) {
             console.error("Upload failed:", err);
-            error = `上传失败: ${err.message || '未知错误'}`;
+            error = `${t('upload')} failed: ${err.message || t('errors.unknownError')}`;
         } finally {
             isUploading = false;
         }
@@ -392,12 +425,12 @@ export let plugin;
             });
             
             if (!response.ok) {
-                throw new Error(`获取文件信息失败: ${response.status}`);
+                throw new Error(`Failed to get file info: ${response.status}`);
             }
             
             const result = await response.json();
             if (result.code !== 200) {
-                throw new Error(result.message || '获取文件信息失败');
+                throw new Error(result.message || 'Failed to get file info');
             }
             
             const fileInfo = result.data;
@@ -414,7 +447,7 @@ export let plugin;
             
         } catch (err) {
             console.error("Download failed:", err);
-            error = `下载失败: ${err.message || '未知错误'}`;
+            error = `${t('download')} failed: ${err.message || t('errors.unknownError')}`;
         }
     }
 
@@ -433,7 +466,7 @@ export let plugin;
             
             // 创建引用块格式，避免与思源笔记查询嵌入块冲突
             // 使用简化的格式，只显示文件名和AList图标
-            const blockContent = `> 🅰️ **AList 文件**: [${file.name}](${alistLink})`;
+            const blockContent = `> 🅰️ **AList File**: [${file.name}](${alistLink})`;
             
             console.log('Generated AList link:', alistLink);
             console.log('Block content:', blockContent);
@@ -445,21 +478,21 @@ export let plugin;
                 if (protyle) {
                     // 插入自定义块内容
                     document.execCommand('insertText', false, blockContent);
-                    await pushMsg(`已嵌入AList文件块: ${file.name}`);
+                    await pushMsg(`AList file block embedded: ${file.name}`);
                 } else {
                     // 如果没有活动编辑器，则复制到剪贴板
                     await navigator.clipboard.writeText(blockContent);
-                    await pushMsg(`已复制文件块到剪贴板: ${file.name}`);
+                    await pushMsg(`File block copied to clipboard: ${file.name}`);
                 }
             } else {
                 // 备用方案：复制到剪贴板
                 await navigator.clipboard.writeText(blockContent);
-                await pushMsg(`已复制文件块到剪贴板: ${file.name}`);
+                await pushMsg(`File block copied to clipboard: ${file.name}`);
             }
             
         } catch (err) {
              console.error("Embed AList link failed:", err);
-             error = `嵌入链接失败: ${err.message || '未知错误'}`;
+             error = `${t('embed')} failed: ${err.message || t('errors.unknownError')}`;
          }
     }
 
@@ -494,7 +527,7 @@ export let plugin;
             
             const result = await response.json();
             if (result.code !== 200) {
-                throw new Error(result.message || '获取文件信息失败');
+                throw new Error(result.message || 'Failed to get file info');
             }
             
             const fileInfo = result.data;
@@ -518,7 +551,7 @@ export let plugin;
                         <div class="hope-stack">
                             <video controls style="max-width: 100%; height: auto;">
                                 <source src="${videoUrl}" type="video/mp4">
-                                您的浏览器不支持视频播放。
+                                Your browser does not support video playback.
                             </video>
                         </div>
                     </div>
@@ -531,7 +564,7 @@ export let plugin;
                         <div class="hope-stack">
                             <audio controls style="width: 100%;">
                                 <source src="${audioUrl}" type="audio/mpeg">
-                                您的浏览器不支持音频播放。
+                                Your browser does not support audio playback.
                             </audio>
                         </div>
                     </div>
@@ -545,7 +578,7 @@ export let plugin;
                             <iframe 
                                 src="https://res.oplist.org/pdf.js/web/viewer.html?file=${fileUrl}" 
                                 style="width: 100%; height: 600px; border: none;"
-                                title="PDF 预览">
+                                title="PDF Preview">
                             </iframe>
                         </div>
                     </div>
@@ -559,11 +592,11 @@ export let plugin;
                             <iframe 
                                 src="https://view.officeapps.live.com/op/view.aspx?src=${fileUrl}" 
                                 style="width: 100%; height: 600px; border: none;"
-                                title="Office 文档预览"
+                                title="Office Document Preview"
                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                             </iframe>
                             <div style="display: none; text-align: center; padding: 40px; background: #f8f9fa; border-radius: 4px;">
-                                <p style="margin-bottom: 16px; color: #6c757d;">预览服务暂时不可用，请尝试下载文件查看</p>
+                                <p style="margin-bottom: 16px; color: #6c757d;">Preview service is temporarily unavailable, please try downloading the file to view</p>
                             </div>
                         </div>
                     </div>
@@ -577,7 +610,7 @@ export let plugin;
                             <iframe 
                                 src="https://res.oplist.org/epub.js/viewer.html?url=${fileUrl}" 
                                 style="width: 100%; height: 600px; border: none;"
-                                title="EPUB 预览">
+                                title="EPUB Preview">
                             </iframe>
                         </div>
                     </div>
@@ -625,7 +658,7 @@ export let plugin;
                         </div>
                     `;
                 } catch (textErr) {
-                    throw new Error('无法加载 Markdown 内容');
+                    throw new Error('Unable to load Markdown content');
                 }
             } else if (file.name.match(/\.(txt|json|xml|html|css|js|ts|py|java|cpp|c|h)$/i)) {
                 // 其他文本文件预览
@@ -645,7 +678,7 @@ export let plugin;
                         </div>
                     `;
                 } catch (textErr) {
-                    throw new Error('无法加载文本内容');
+                    throw new Error('Unable to load text content');
                 }
             } else {
                 // 不支持的文件类型
@@ -654,8 +687,8 @@ export let plugin;
                         <div class="hope-stack" style="text-align: center; padding: 40px;">
                             <div style="font-size: 48px; margin-bottom: 16px;">📄</div>
                             <h3>${file.name}</h3>
-                            <p>此文件类型暂不支持预览</p>
-                            <p>文件大小: ${formatFileSize(file.size)}</p>
+                            <p>This file type is not supported for preview</p>
+                            <p>File size: ${formatFileSize(file.size)}</p>
                         </div>
                     </div>
                 `;
@@ -663,7 +696,7 @@ export let plugin;
             
         } catch (err) {
             console.error("Preview failed:", err);
-            previewContent = `<div class="preview-error">预览失败: ${err.message}</div>`;
+            previewContent = `<div class="preview-error">Preview failed: ${err.message}</div>`;
         } finally {
             isLoadingPreview = false;
         }
@@ -715,7 +748,7 @@ export let plugin;
      */
     async function createFolder() {
         if (!newFolderName.trim()) {
-            error = "请输入文件夹名称";
+            error = "Please enter folder name";
             return;
         }
 
@@ -738,24 +771,24 @@ export let plugin;
             });
             
             if (!response.ok) {
-                throw new Error(`创建文件夹失败: ${response.status}`);
+                throw new Error(`Failed to create folder: ${response.status}`);
             }
             
             const result = await response.json();
             if (result.code !== 200) {
-                throw new Error(result.message || '创建文件夹失败');
+                throw new Error(result.message || 'Failed to create folder');
             }
             
             // 刷新文件列表（强制刷新以确保删除的文件不再显示）
             await loadFiles(currentPath, true);
             
             // 显示成功提示
-            await pushMsg(`文件夹 "${newFolderName}" 创建成功！`);
+            await pushMsg(`Folder "${newFolderName}" created successfully!`);
             newFolderName = "";
             
         } catch (err) {
             console.error("Create folder failed:", err);
-            error = `创建文件夹失败: ${err.message || '未知错误'}`;
+            error = `Failed to create folder: ${err.message || t('errors.unknownError')}`;
         } finally {
             isCreatingFolder = false;
         }
@@ -778,11 +811,11 @@ export let plugin;
      */
     async function deleteSelectedFolders() {
         if (selectedFolders.size === 0) {
-            error = "请选择要删除的文件夹";
+            error = "Please select folders to delete";
             return;
         }
 
-        if (!confirm(`确定要删除选中的 ${selectedFolders.size} 个文件夹吗？此操作不可恢复！`)) {
+        if (!confirm(`Are you sure you want to delete the selected ${selectedFolders.size} folders? This operation cannot be undone!`)) {
             return;
         }
 
@@ -808,12 +841,12 @@ export let plugin;
                 });
                 
                 if (!response.ok) {
-                    throw new Error(`删除文件夹 ${folderName} 失败: ${response.status}`);
+                    throw new Error(`Failed to delete folder ${folderName}: ${response.status}`);
                 }
                 
                 const result = await response.json();
                 if (result.code !== 200) {
-                    throw new Error(result.message || `删除文件夹 ${folderName} 失败`);
+                    throw new Error(result.message || `Failed to delete folder ${folderName}`);
                 }
             }
             
@@ -821,12 +854,12 @@ export let plugin;
             await loadFiles(currentPath, true);
             
             // 显示成功提示
-            await pushMsg(`成功删除 ${selectedFolders.size} 个文件夹！`);
+            await pushMsg(`Successfully deleted ${selectedFolders.size} folders!`);
             selectedFolders.clear();
             
         } catch (err) {
             console.error("Delete folders failed:", err);
-            error = `删除文件夹失败: ${err.message || '未知错误'}`;
+            error = `Failed to delete folders: ${err.message || t('errors.unknownError')}`;
         } finally {
             isDeletingFolders = false;
         }
@@ -852,12 +885,12 @@ export let plugin;
      */
     async function renameSelectedFile() {
         if (selectedFiles.size === 0) {
-            error = "请选择要重命名的文件";
+            error = "Please select a file to rename";
             return;
         }
 
         if (selectedFiles.size > 1) {
-            error = "重命名操作只能选择一个文件";
+            error = "Rename operation can only select one file";
             return;
         }
 
@@ -867,8 +900,8 @@ export let plugin;
         const { inputDialog } = await import('./libs/dialog');
         
         inputDialog({
-            title: "重命名文件",
-            placeholder: "请输入新的文件名",
+            title: "Rename File",
+            placeholder: "Please enter new file name",
             defaultText: fileName,
             confirm: async (newName) => {
                  const newFileName = newName as string;
@@ -877,7 +910,7 @@ export let plugin;
                  }
                  
                  if (!newFileName.trim()) {
-                     error = "文件名不能为空";
+                     error = "File name cannot be empty";
                      return;
                  }
 
@@ -901,23 +934,23 @@ export let plugin;
                      });
                      
                      if (!response.ok) {
-                         throw new Error(`重命名文件失败: ${response.status}`);
+                         throw new Error(`Failed to rename file: ${response.status}`);
                      }
                      
                      const result = await response.json();
                      if (result.code !== 200) {
-                         throw new Error(result.message || '重命名文件失败');
+                         throw new Error(result.message || 'Failed to rename file');
                      }
                      
                      // 显示成功提示
-                     await pushMsg(`文件重命名成功: ${fileName} → ${newFileName.trim()}`);
+                     await pushMsg(`File renamed successfully: ${fileName} → ${newFileName.trim()}`);
                      
                      // 使用新的刷新函数，确保完全重新渲染
                      await refreshFileList();
                     
                 } catch (err) {
                     console.error("Rename file failed:", err);
-                    error = `重命名文件失败: ${err.message || '未知错误'}`;
+                    error = `Failed to rename file: ${err.message || t('errors.unknownError')}`;
                 } finally {
                     isDeletingFiles = false;
                 }
@@ -933,12 +966,12 @@ export let plugin;
      */
     async function moveSelectedItem() {
         if (selectedFiles.size === 0) {
-            error = "请选择要移动的文件或文件夹";
+            error = "Please select a file or folder to move";
             return;
         }
 
         if (selectedFiles.size > 1) {
-            error = "移动操作只能选择一个文件或文件夹";
+            error = "Move operation can only select one file or folder";
             return;
         }
 
@@ -957,7 +990,7 @@ export let plugin;
      */
     async function loadFolderTree() {
         if (!isLoggedIn || !token) {
-            error = "请先登录";
+            error = "Please login first";
             return;
         }
 
@@ -987,7 +1020,7 @@ export let plugin;
             
             const data = await response.json();
             if (data.code !== 200) {
-                throw new Error(data.message || '获取文件夹列表失败');
+                throw new Error(data.message || 'Failed to get folder list');
             }
             
             // 为每个文件夹添加树形结构所需的属性
@@ -1000,7 +1033,7 @@ export let plugin;
             }));
         } catch (err) {
             console.error("Load folder tree failed:", err);
-            error = `加载文件夹树失败: ${err.message || '未知错误'}`;
+            error = `Failed to load folder tree: ${err.message || 'Unknown error'}`;
         } finally {
             isLoadingFolderTree = false;
         }
@@ -1038,7 +1071,7 @@ export let plugin;
             
             const data = await response.json();
             if (data.code !== 200) {
-                throw new Error(data.message || '获取子文件夹失败');
+                throw new Error(data.message || 'Failed to get subfolders');
             }
             
             // 更新文件夹树中对应节点的子文件夹
@@ -1047,7 +1080,7 @@ export let plugin;
             
         } catch (err) {
             console.error("Load subfolders failed:", err);
-            error = `加载子文件夹失败: ${err.message || '未知错误'}`;
+            error = `Failed to load subfolders: ${err.message || 'Unknown error'}`;
         } finally {
             loadingSubfolders.delete(folderPath);
             loadingSubfolders = loadingSubfolders; // 触发响应式更新
@@ -1137,7 +1170,7 @@ export let plugin;
      */
     async function executeMove() {
         if (!moveItem || !moveTargetPath) {
-            error = "请选择目标文件夹";
+            error = "Please select target folder";
             return;
         }
 
@@ -1182,7 +1215,7 @@ export let plugin;
             // 根据API返回的message判断是否成功
             if (result.message === 'success' || result.code === 200) {
                 // 移动成功
-                await pushMsg(`${isFolder ? '文件夹' : '文件'}移动成功: ${moveItem} → ${moveTargetPath}`);
+                await pushMsg(`${isFolder ? 'Folder' : 'File'} moved successfully: ${moveItem} → ${moveTargetPath}`);
                 
                 // 使用新的刷新函数，确保完全重新渲染
                 await refreshFileList();
@@ -1190,12 +1223,12 @@ export let plugin;
                 // 关闭对话框
                 closeMoveDialog();
             } else {
-                throw new Error(result.message || '移动操作失败');
+                throw new Error(result.message || 'Move operation failed');
             }
             
         } catch (err) {
             console.error("Move item failed:", err);
-            error = `移动失败: ${err.message || '未知错误'}`;
+            error = `Move failed: ${err.message || t('errors.unknownError')}`;
         } finally {
             isMoving = false;
         }
@@ -1206,12 +1239,12 @@ export let plugin;
      */
     async function moveSelectedFolder() {
         if (selectedFolders.size === 0) {
-            error = "请选择要移动的文件夹";
+            error = "Please select a folder to move";
             return;
         }
 
         if (selectedFolders.size > 1) {
-            error = "移动操作只能选择一个文件夹";
+            error = "Move operation can only select one folder";
             return;
         }
 
@@ -1238,11 +1271,11 @@ export let plugin;
 
     async function deleteSelectedFiles() {
         if (selectedFiles.size === 0) {
-            error = "请选择要删除的文件";
+            error = "Please select files to delete";
             return;
         }
 
-        if (!confirm(`确定要删除选中的 ${selectedFiles.size} 个文件吗？此操作不可恢复！`)) {
+        if (!confirm(`Are you sure you want to delete the selected ${selectedFiles.size} files? This operation cannot be undone!`)) {
             return;
         }
 
@@ -1266,24 +1299,24 @@ export let plugin;
                 });
                 
                 if (!response.ok) {
-                    throw new Error(`删除文件 ${fileName} 失败: ${response.status}`);
+                    throw new Error(`Failed to delete file ${fileName}: ${response.status}`);
                 }
                 
                 const result = await response.json();
                 if (result.code !== 200) {
-                    throw new Error(result.message || `删除文件 ${fileName} 失败`);
+                    throw new Error(result.message || `Failed to delete file ${fileName}`);
                 }
             }
             
             // 显示成功提示
-            await pushMsg(`成功删除 ${selectedFiles.size} 个文件！`);
+            await pushMsg(`Successfully deleted ${selectedFiles.size} files!`);
             
             // 使用新的刷新函数，确保完全重新渲染
             await refreshFileList();
             
         } catch (err) {
             console.error("Delete files failed:", err);
-            error = `删除文件失败: ${err.message || '未知错误'}`;
+            error = `Failed to delete files: ${err.message || t('errors.unknownError')}`;
         } finally {
             isDeletingFiles = false;
         }
@@ -1294,7 +1327,7 @@ export let plugin;
      */
     async function loadUndoneTasks() {
         if (!isLoggedIn || !token) {
-            error = "请先登录";
+            error = "Please login first";
             return;
         }
 
@@ -1318,7 +1351,7 @@ export let plugin;
 
             const undoneData = await undoneResponse.json();
             if (undoneData.code !== 200) {
-                throw new Error(undoneData.message || '获取未完成任务失败');
+                throw new Error(undoneData.message || 'Failed to get undone tasks');
             }
 
             // 获取已完成的离线下载任务（包括失败的）
@@ -1342,7 +1375,7 @@ export let plugin;
             tasks = [...(undoneData.data || []), ...doneTasks];
         } catch (err) {
             console.error("Load tasks failed:", err);
-            error = `加载任务失败: ${err.message || '未知错误'}`;
+            error = `Failed to load tasks: ${err.message || t('errors.unknownError')}`;
         } finally {
             isLoadingTasks = false;
         }
@@ -1353,7 +1386,7 @@ export let plugin;
      */
     async function startOfflineDownload() {
         if (!downloadUrls.trim()) {
-            error = "请输入下载链接";
+            error = "Please enter download links";
             return;
         }
 
@@ -1380,22 +1413,22 @@ export let plugin;
                 });
 
                 if (!response.ok) {
-                    throw new Error(`添加离线下载失败: ${response.status} ${response.statusText}`);
+                    throw new Error(`Failed to add offline download: ${response.status} ${response.statusText}`);
                 }
 
                 const result = await response.json();
                 if (result.code !== 200) {
-                    throw new Error(result.message || '添加离线下载失败');
+                    throw new Error(result.message || 'Failed to add offline download');
                 }
             }
 
             // 显示成功提示
-            await pushMsg(`成功添加 ${urls.length} 个离线下载任务！`);
+            await pushMsg(`Successfully added ${urls.length} offline download tasks!`);
             downloadUrls = "";
             
         } catch (err) {
             console.error("Offline download failed:", err);
-            error = `离线下载失败: ${err.message || '未知错误'}`;
+            error = `Offline download failed: ${err.message || 'Unknown error'}`;
         } finally {
             isOfflineDownloading = false;
         }
@@ -1412,7 +1445,7 @@ export let plugin;
      * @returns {string} 格式化后的任务名称
      */
     function formatTaskName(name) {
-        if (!name) return '未知任务';
+        if (!name) return 'Unknown task';
         
         // 移除"download "前缀
         let cleanName = name.replace(/^download\s+/, '');
@@ -1477,7 +1510,7 @@ export let plugin;
      */
     async function clearSucceededTasks() {
         if (!token) {
-            error = "请先登录";
+            error = "Please login first";
             return;
         }
 
@@ -1501,18 +1534,18 @@ export let plugin;
 
             const result = await response.json();
             if (result.code !== 200) {
-                throw new Error(result.message || '清空已成功任务失败');
+                throw new Error(result.message || 'Failed to clear succeeded tasks');
             }
 
             // 显示成功提示
-            await pushMsg('已清空所有成功的离线下载任务！');
+            await pushMsg('All successful offline download tasks cleared!');
             
             // 刷新任务列表
             await loadUndoneTasks();
             
         } catch (err) {
             console.error("Clear succeeded tasks error:", err);
-            error = `清空已成功任务失败: ${err.message || '未知错误'}`;
+            error = `Failed to clear succeeded tasks: ${err.message || t('errors.unknownError')}`;
         } finally {
             isLoading = false;
         }
@@ -1524,13 +1557,13 @@ export let plugin;
      */
     async function retrySelectedTasks() {
         if (!token) {
-            error = "请先登录";
+            error = "Please login first";
             return;
         }
 
         // 检查是否有选中的任务
         if (selectedTasks.size === 0) {
-            await pushMsg('请先选择要重试的任务！');
+            await pushMsg('Please select tasks to retry first!');
             return;
         }
 
@@ -1556,11 +1589,11 @@ export let plugin;
 
             const result = await response.json();
             if (result.code !== 200) {
-                throw new Error(result.message || '重试选中任务失败');
+                throw new Error(result.message || 'Failed to retry selected tasks');
             }
 
             // 显示成功提示
-            await pushMsg(`已重试 ${taskIds.length} 个选中的离线下载任务！`);
+            await pushMsg(`Retried ${taskIds.length} selected offline download tasks!`);
             
             // 清空选中状态
             selectedTasks.clear();
@@ -1571,7 +1604,7 @@ export let plugin;
             
         } catch (err) {
             console.error("Retry selected tasks error:", err);
-            error = `重试选中任务失败: ${err.message || '未知错误'}`;
+            error = `Failed to retry selected tasks: ${err.message || t('errors.unknownError')}`;
         } finally {
             isLoading = false;
         }
@@ -1583,7 +1616,7 @@ export let plugin;
      */
     async function clearDoneTasks() {
         if (!token) {
-            error = "请先登录";
+            error = "Please login first";
             return;
         }
 
@@ -1607,18 +1640,18 @@ export let plugin;
 
             const result = await response.json();
             if (result.code !== 200) {
-                throw new Error(result.message || '清空已完成任务失败');
+                throw new Error(result.message || 'Failed to clear done tasks');
             }
 
             // 显示成功提示
-            await pushMsg('已清空所有完成的离线下载任务！');
+            await pushMsg('All completed offline download tasks cleared!');
             
             // 刷新任务列表
             await loadUndoneTasks();
             
         } catch (err) {
             console.error("Clear done tasks error:", err);
-            error = `清空已完成任务失败: ${err.message || '未知错误'}`;
+            error = `Failed to clear done tasks: ${err.message || t('errors.unknownError')}`;
         } finally {
             isLoading = false;
         }
@@ -1629,7 +1662,7 @@ export let plugin;
      */
     async function retryFailedTasks() {
         if (!token) {
-            error = "请先登录";
+            error = "Please login first";
             return;
         }
 
@@ -1653,18 +1686,18 @@ export let plugin;
 
             const result = await response.json();
             if (result.code !== 200) {
-                throw new Error(result.message || '重试失败任务失败');
+                throw new Error(result.message || 'Failed to retry failed tasks');
             }
 
             // 显示成功提示
-            await pushMsg('已重试所有失败的离线下载任务！');
+            await pushMsg('All failed offline download tasks retried!');
             
             // 刷新任务列表
             await loadUndoneTasks();
             
         } catch (err) {
             console.error("Retry failed tasks error:", err);
-            error = `重试失败任务失败: ${err.message || '未知错误'}`;
+            error = `Failed to retry failed tasks: ${err.message || t('errors.unknownError')}`;
         } finally {
             isLoading = false;
         }
@@ -1678,21 +1711,21 @@ export let plugin;
     <div class="alist-header">
         <div class="alist-path">
             <button class="b3-button b3-button--small" on:click={goBack} disabled={currentPath === "/" || isLoading}>
-                ⬅️ 返回
+                ⬅️ Back
             </button>
             <span class="alist-current-path">{currentPath}</span>
         </div>
         <div class="alist-actions">
             {#if !isLoggedIn}
                 <button class="b3-button b3-button--small" on:click={loginAndLoadFiles} disabled={isLoading}>
-                    🔑 登录
+                    🔑 Login
                 </button>
             {:else}
                 <button class="b3-button b3-button--small" on:click={showFunctionGroupDialog} disabled={isLoading}>
-                    ⚙️ 功能
+                    ⚙️ Functions
                 </button>
                 <button class="b3-button b3-button--small" on:click={refreshFileList} disabled={isLoading}>
-                    🔄 刷新
+                    🔄 Refresh
                 </button>
             {/if}
         </div>
@@ -1704,12 +1737,12 @@ export let plugin;
             <div class="alist-loading">
                 <div class="loading-spinner"></div>
                 <div class="loading-text">
-                    <span class="loading-title">正在加载...</span>
+                    <span class="loading-title">Loading...</span>
                     <span class="loading-subtitle">
                         {#if !isLoggedIn}
-                            正在连接AList服务器
+                            Connecting to AList server
                         {:else}
-                            正在获取文件列表
+                            Getting file list
                         {/if}
                     </span>
                 </div>
@@ -1719,22 +1752,22 @@ export let plugin;
                 <div class="error-icon">⚠️</div>
                 <div class="error-message">{error}</div>
                 <button class="b3-button b3-button--small" on:click={loginAndLoadFiles}>
-                    重试
+                    Retry
                 </button>
             </div>
         {:else if !isLoggedIn}
             <div class="alist-welcome">
                 <div class="welcome-icon">📁</div>
-                <h3>AList 文件浏览器</h3>
-                <p>请先在设置中配置 AList 服务器信息，然后点击登录按钮。</p>
+                <h3>AList File Browser</h3>
+                <p>Please configure AList server information in settings first, then click the login button.</p>
                 <button class="b3-button" on:click={loginAndLoadFiles}>
-                    🔑 立即登录
+                    🔑 Login Now
                 </button>
             </div>
         {:else if files.length === 0}
             <div class="alist-empty">
                 <div class="empty-icon">📂</div>
-                <p>此目录为空</p>
+                <p>This directory is empty</p>
             </div>
         {:else}
             <div class="alist-file-list">
@@ -1768,25 +1801,25 @@ export let plugin;
                                 <button 
                                     class="b3-button b3-button--small preview-btn" 
                                     on:click={() => showFilePreview(file)}
-                                    title="预览文件"
+                                    title="Preview file"
                                 >
-                                    👁️ 预览
+                                    👁️ Preview
                                 </button>
                                 <button 
                                     class="b3-button b3-button--small download-btn"
                                     on:click={() => downloadFile(file)}
-                                    title="下载文件"
+                                    title="Download file"
                                     style="margin-left: 4px;"
                                 >
-                                    📥 下载
+                                    📥 Download
                                 </button>
                                 <button 
                                     class="b3-button b3-button--small embed-link-btn"
                                     on:click={() => embedAListLink(file)}
-                                    title="嵌入到笔记"
+                                    title="Embed to note"
                                     style="margin-left: 4px;"
                                 >
-                                    📝 嵌入此处
+                                    📝 Embed here
                                 </button>
                             </div>
                         {/if}
@@ -1801,7 +1834,7 @@ export let plugin;
         <div class="upload-overlay" on:click={closeUploadDialog}>
             <div class="upload-dialog" on:click|stopPropagation>
                 <div class="upload-header">
-                    <h3>📤 上传文件到 {currentPath}</h3>
+                    <h3>📤 Upload files to {currentPath}</h3>
                     <button class="close-btn" on:click={closeUploadDialog}>✕</button>
                 </div>
                 
@@ -1823,21 +1856,21 @@ export let plugin;
                             on:change={handleFolderSelect}
                         />
                         
-                        <h4>拖动文件到此处以上传，或点击：</h4>
+                        <h4>Drag files here to upload, or click:</h4>
                         
                         <!-- 文件选择按钮 -->
                         <div class="upload-buttons">
                             <button 
                                 class="upload-btn folder-btn" 
                                 on:click={() => document.getElementById('folder-input').click()}
-                                title="选择文件夹"
+                                title="Select folder"
                             >
                                 📁
                             </button>
                             <button 
                                 class="upload-btn file-btn" 
                                 on:click={() => document.getElementById('file-input').click()}
-                                title="选择文件"
+                                title="Select files"
                             >
                                 📄
                             </button>
@@ -1847,7 +1880,7 @@ export let plugin;
                         <div class="upload-config-row">
                             <!-- 上传模式选择 -->
                             <div class="upload-mode">
-                                <label for="upload-mode-select">模式:</label>
+                                <label for="upload-mode-select">Mode:</label>
                                 <select id="upload-mode-select" bind:value={uploadMode} class="b3-select">
                                     <option value="stream">Stream</option>
                                     <option value="form">Form</option>
@@ -1858,15 +1891,15 @@ export let plugin;
                             <div class="upload-options">
                                 <label class="upload-checkbox">
                                     <input type="checkbox" bind:checked={addAsTask} />
-                                    <span>添加为任务</span>
+                                    <span>Add as task</span>
                                 </label>
                                 <label class="upload-checkbox">
                                     <input type="checkbox" bind:checked={overwriteExisting} />
-                                    <span>覆盖现有文件</span>
+                                    <span>Overwrite existing files</span>
                                 </label>
                                 <label class="upload-checkbox">
                                     <input type="checkbox" bind:checked={tryInstantUpload} />
-                                    <span>尝试秒传</span>
+                                    <span>Try instant upload</span>
                                 </label>
                             </div>
                         </div>
@@ -1875,7 +1908,7 @@ export let plugin;
                     <!-- 选中的文件列表 -->
                     {#if uploadFiles.length > 0}
                         <div class="selected-files">
-                            <h4>选中的文件 ({uploadFiles.length}):</h4>
+                            <h4>Selected files ({uploadFiles.length}):</h4>
                             <div class="file-list">
                                 {#each uploadFiles as file, index}
                                     <div class="selected-file">
@@ -1906,7 +1939,7 @@ export let plugin;
                 
                 <div class="upload-footer">
                     <button class="b3-button" on:click={closeUploadDialog} disabled={isUploading}>
-                        取消
+                        Cancel
                     </button>
                     <button 
                         class="b3-button b3-button--primary" 
@@ -1914,9 +1947,9 @@ export let plugin;
                         disabled={uploadFiles.length === 0 || isUploading}
                     >
                         {#if isUploading}
-                            上传中...
+                            Uploading...
                         {:else}
-                            开始上传
+                            Start Upload
                         {/if}
                     </button>
                 </div>
@@ -1929,7 +1962,7 @@ export let plugin;
         <div class="function-overlay" on:click={closeFunctionGroupDialog}>
             <div class="function-dialog" on:click|stopPropagation>
                 <div class="function-header">
-                    <h3>⚙️ 功能组</h3>
+                    <h3>⚙️ Function Group</h3>
                     <button class="close-btn" on:click={closeFunctionGroupDialog}>✕</button>
                 </div>
                 
@@ -1939,28 +1972,28 @@ export let plugin;
                         class:active={activeTab === "folder"}
                         on:click={() => switchTab("folder")}
                     >
-                        📁 文件夹管理
+                        📁 Folder Management
                     </button>
                     <button 
                         class="tab-btn" 
                         class:active={activeTab === "file"}
                         on:click={() => switchTab("file")}
                     >
-                        文件管理
+                        File Management
                     </button>
                     <button 
                         class="tab-btn" 
                         class:active={activeTab === "upload"}
                         on:click={() => switchTab("upload")}
                     >
-                        📤 上传文件
+                        📤 Upload Files
                     </button>
                     <button 
                         class="tab-btn" 
                         class:active={activeTab === "task"}
                         on:click={() => switchTab("task")}
                     >
-                        📋 任务列表
+                        📋 Task List
                     </button>
                 </div>
                 
@@ -1969,12 +2002,12 @@ export let plugin;
                         <div class="folder-management">
                             <!-- 新建文件夹 -->
                             <div class="function-section">
-                                <h4>📁 新建文件夹</h4>
+                                <h4>📁 Create New Folder</h4>
                                 <div class="input-group">
                                     <input 
                                         type="text" 
                                         bind:value={newFolderName}
-                                        placeholder="输入文件夹名称"
+                                        placeholder="Enter folder name"
                                         class="b3-text-field"
                                         disabled={isCreatingFolder}
                                         on:keydown={(e) => e.key === 'Enter' && createFolder()}
@@ -1985,9 +2018,9 @@ export let plugin;
                                         disabled={isCreatingFolder || !newFolderName.trim()}
                                     >
                                         {#if isCreatingFolder}
-                                            创建中...
+                                            Creating...
                                         {:else}
-                                            创建
+                                            Create
                                         {/if}
                                     </button>
                                 </div>
@@ -1995,12 +2028,12 @@ export let plugin;
                             
                             <!-- 删除文件夹 -->
                             <div class="function-section">
-                                <h4>🗑️ 删除文件夹</h4>
-                                <p class="section-desc">选择要删除的文件夹，然后点击删除按钮</p>
+                                <h4>🗑️ Delete Folder</h4>
+                                <p class="section-desc">Select folders to delete, then click the delete button</p>
                                 
                                 <div class="folder-selection">
                                     {#if files.filter(f => f.is_dir).length === 0}
-                                        <p class="no-folders">当前目录没有文件夹</p>
+                                        <p class="no-folders">No folders in current directory</p>
                                     {:else}
                                         <div class="folder-list">
                                             {#each files.filter(f => f.is_dir) as folder}
@@ -2017,7 +2050,7 @@ export let plugin;
                                         
                                         {#if selectedFolders.size > 0}
                                             <div class="delete-actions">
-                                                <p class="selected-count">已选择 {selectedFolders.size} 个文件夹</p>
+                                                <p class="selected-count">Selected {selectedFolders.size} folders</p>
                                                 <div class="folder-action-buttons">
                                                     <button 
                                                         class="b3-button b3-button--danger"
@@ -2026,9 +2059,9 @@ export let plugin;
                                                         style="margin-right: 8px;"
                                                     >
                                                         {#if isDeletingFolders}
-                                                            删除中...
+                                                            Deleting...
                                                         {:else}
-                                                            🗑️ 删除选中的文件夹
+                                                            🗑️ Delete Selected Folders
                                                         {/if}
                                                     </button>
                                                     <button 
@@ -2036,9 +2069,9 @@ export let plugin;
                                                         on:click={moveSelectedFolder}
                                                         disabled={isDeletingFolders || selectedFolders.size !== 1}
                                                         style="background-color: #FF9800; color: white;"
-                                                        title={selectedFolders.size > 1 ? "移动操作只能选择一个文件夹" : "移动选中的文件夹"}
+                                                        title={selectedFolders.size > 1 ? "Move operation can only select one folder" : "Move selected folder"}
                                                     >
-                                                        📁 移动
+                                                        📁 Move
                                                     </button>
                                                 </div>
                                             </div>
@@ -2053,7 +2086,7 @@ export let plugin;
                                 
                                 <div class="file-selection">
                                     {#if files.filter(f => !f.is_dir).length === 0}
-                                        <p class="no-files">当前目录没有文件</p>
+                                        <p class="no-files">No files in current directory</p>
                                     {:else}
                                         <div class="file-list">
                                             {#each files.filter(f => !f.is_dir) as file}
@@ -2072,7 +2105,7 @@ export let plugin;
                                         
                                         {#if selectedFiles.size > 0}
                                             <div class="delete-actions">
-                                                <p class="selected-count">已选择 {selectedFiles.size} 个文件</p>
+                                                <p class="selected-count">Selected {selectedFiles.size} files</p>
                                                 <div class="file-action-buttons">
                                                     <button 
                                                         class="b3-button"
@@ -2081,9 +2114,9 @@ export let plugin;
                                                         style="background-color: #f44336; color: white; margin-right: 8px;"
                                                     >
                                                         {#if isDeletingFiles}
-                                                            删除中...
+                                                            Deleting...
                                                         {:else}
-                                                            删除选中
+                                                            Delete Selected
                                                         {/if}
                                                     </button>
                                                     <button 
@@ -2091,18 +2124,18 @@ export let plugin;
                                                         on:click={renameSelectedFile}
                                                         disabled={isDeletingFiles || selectedFiles.size !== 1}
                                                         style="background-color: #2196F3; color: white; margin-right: 8px;"
-                                                        title={selectedFiles.size > 1 ? "重命名操作只能选择一个文件" : "重命名选中的文件"}
+                                                        title={selectedFiles.size > 1 ? "Rename operation can only select one file" : "Rename selected file"}
                                                     >
-                                                        改文件名
+                                                        Rename
                                                     </button>
                                                     <button 
                                                         class="b3-button"
                                                         on:click={moveSelectedItem}
                                                         disabled={isDeletingFiles || selectedFiles.size !== 1}
                                                         style="background-color: #FF9800; color: white;"
-                                                        title={selectedFiles.size > 1 ? "移动操作只能选择一个文件" : "移动选中的文件"}
+                                                        title={selectedFiles.size > 1 ? "Move operation can only select one file" : "Move selected file"}
                                                     >
-                                                        📁 移动
+                                                        📁 Move
                                                     </button>
                                                 </div>
                                             </div>
@@ -2120,21 +2153,21 @@ export let plugin;
                                     class:active={uploadTab === "online"}
                                     on:click={() => uploadTab = "online"}
                                 >
-                                    🌐 在线上传
+                                    🌐 Online Upload
                                 </button>
                                 <button 
                                     class="upload-method-tab" 
                                     class:active={uploadTab === "offline"}
                                     on:click={() => uploadTab = "offline"}
                                 >
-                                    📥 离线下载
+                                    📥 Offline Download
                                 </button>
                             </div>
                             
                             {#if uploadTab === "online"}
                                 <!-- 在线上传区域 -->
                                 <div class="function-section">
-                                    <h4>📤 在线上传文件到 {currentPath}</h4>
+                                    <h4>📤 Online upload files to {currentPath}</h4>
                                 <div class="upload-drop-zone">
                                     <input 
                                         type="file" 
@@ -2151,21 +2184,21 @@ export let plugin;
                                         on:change={handleFolderSelect}
                                     />
                                     
-                                    <h5>拖动文件到此处以上传，或点击：</h5>
+                                    <h5>Drag files here to upload, or click:</h5>
                                     
                                     <!-- 文件选择按钮 -->
                                     <div class="upload-buttons">
                                         <button 
                                             class="upload-btn folder-btn" 
                                             on:click={() => document.getElementById('function-folder-input').click()}
-                                            title="选择文件夹"
+                                            title="Select folder"
                                         >
                                             📁
                                         </button>
                                         <button 
                                             class="upload-btn file-btn" 
                                             on:click={() => document.getElementById('function-file-input').click()}
-                                            title="选择文件"
+                                            title="Select files"
                                         >
                                             📄
                                         </button>
@@ -2175,7 +2208,7 @@ export let plugin;
                                     <div class="upload-config-row">
                                         <!-- 上传模式选择 -->
                                         <div class="upload-mode">
-                                            <label for="function-upload-mode-select">模式:</label>
+                                            <label for="function-upload-mode-select">Mode:</label>
                                             <select id="function-upload-mode-select" bind:value={uploadMode} class="b3-select">
                                                 <option value="stream">Stream</option>
                                                 <option value="form">Form</option>
@@ -2186,15 +2219,15 @@ export let plugin;
                                         <div class="upload-options">
                                             <label class="upload-checkbox">
                                                 <input type="checkbox" bind:checked={addAsTask} />
-                                                <span>添加为任务</span>
+                                                <span>Add as task</span>
                                             </label>
                                             <label class="upload-checkbox">
                                                 <input type="checkbox" bind:checked={overwriteExisting} />
-                                                <span>覆盖现有文件</span>
+                                                <span>Overwrite existing files</span>
                                             </label>
                                             <label class="upload-checkbox">
                                                 <input type="checkbox" bind:checked={tryInstantUpload} />
-                                                <span>尝试秒传</span>
+                                                <span>Try instant upload</span>
                                             </label>
                                         </div>
                                     </div>
@@ -2203,7 +2236,7 @@ export let plugin;
                                 <!-- 选中的文件列表 -->
                                 {#if uploadFiles.length > 0}
                                     <div class="selected-files">
-                                        <h5>选中的文件 ({uploadFiles.length}):</h5>
+                                        <h5>Selected files ({uploadFiles.length}):</h5>
                                         <div class="file-list">
                                             {#each uploadFiles as file, index}
                                                 <div class="selected-file">
@@ -2234,9 +2267,9 @@ export let plugin;
                                         disabled={uploadFiles.length === 0 || isUploading}
                                     >
                                         {#if isUploading}
-                                            上传中...
+                                            Uploading...
                                         {:else}
-                                            开始上传
+                                            Start Upload
                                         {/if}
                                     </button>
                                 </div>
@@ -2244,16 +2277,16 @@ export let plugin;
                             {:else if uploadTab === "offline"}
                                 <!-- 离线下载区域 -->
                                 <div class="function-section">
-                                    <h4>📥 离线下载到 {currentPath}</h4>
-                                    <p class="section-desc">输入下载链接，AList 将在后台自动下载文件</p>
+                                    <h4>📥 Offline download to {currentPath}</h4>
+                                    <p class="section-desc">Enter download links, AList will automatically download files in the background</p>
                                     
                                     <div class="offline-download-area">
                                         <div class="download-input-group">
-                                            <label for="download-urls">下载链接（每行一个）:</label>
+                                            <label for="download-urls">Download links (one per line):</label>
                                             <textarea 
                                                 id="download-urls"
                                                 bind:value={downloadUrls}
-                                                placeholder="请输入下载链接，每行一个\n例如：\nhttps://example.com/file1.zip\nhttps://example.com/file2.pdf"
+                                                placeholder="Please enter download links, one per line\nExample:\nhttps://example.com/file1.zip\nhttps://example.com/file2.pdf"
                                                 class="b3-text-field download-textarea"
                                                 rows="6"
                                                 disabled={isOfflineDownloading}
@@ -2267,20 +2300,20 @@ export let plugin;
                                                 disabled={!downloadUrls.trim() || isOfflineDownloading}
                                             >
                                                 {#if isOfflineDownloading}
-                                                    添加中...
+                                                    Adding...
                                                 {:else}
-                                                    📥 开始离线下载
+                                                    📥 Start Offline Download
                                                 {/if}
                                             </button>
                                         </div>
                                         
                                         <div class="download-tips">
-                                            <h5>💡 使用提示：</h5>
+                                            <h5>💡 Usage Tips:</h5>
                                             <ul>
-                                                <li>支持 HTTP/HTTPS 直链下载</li>
-                                                <li>每行输入一个下载链接</li>
-                                                <li>下载任务将在后台执行</li>
-                                                <li>可在任务列表中查看下载进度</li>
+                                                <li>Supports HTTP/HTTPS direct link downloads</li>
+                                                <li>Enter one download link per line</li>
+                                                <li>Download tasks will run in the background</li>
+                                                <li>View download progress in the task list</li>
                                             </ul>
                                         </div>
                                     </div>
@@ -2293,45 +2326,45 @@ export let plugin;
                             <div class="function-section">
                                 <div class="task-header">
                                     <div class="task-title">
-                                        <h4>📋 任务列表</h4>
-                                        <p class="section-desc">查看和管理未完成的任务</p>
+                                        <h4>📋 Task List</h4>
+                                        <p class="section-desc">View and manage unfinished tasks</p>
                                     </div>
                                     <div class="task-actions">
                                         <button 
                                             class="b3-button task-retry-selected-btn" 
                                             on:click={retrySelectedTasks}
                                             disabled={isLoadingTasks || isLoading || selectedTasks.size === 0}
-                                            title="重试已选中的离线下载任务 ({selectedTasks.size} 个)"
+                                            title="Retry selected offline download tasks ({selectedTasks.size} tasks)"
                                             style="background-color: #4CAF50; color: white;"
                                         >
-                                            重试选中
+                                            Retry Selected
                                         </button>
                                         <button 
                                             class="b3-button task-retry-btn" 
                                             on:click={retryFailedTasks}
                                             disabled={isLoadingTasks || isLoading}
-                                            title="重试所有失败的离线下载任务"
+                                            title="Retry all failed offline download tasks"
                                             style="background-color: #FF9800; color: white;"
                                         >
-                                            重试失败
+                                            Retry Failed
                                         </button>
                                         <button 
                                             class="b3-button task-clear-btn" 
                                             on:click={clearSucceededTasks}
                                             disabled={isLoadingTasks || isLoading}
-                                            title="清空所有已成功的离线下载任务"
+                                            title="Clear all successful offline download tasks"
                                             style="background-color: #2196F3; color: white;"
                                         >
-                                            清空成功
+                                            Clear Success
                                         </button>
                                         <button 
                                             class="b3-button task-clear-done-btn" 
                                             on:click={clearDoneTasks}
                                             disabled={isLoadingTasks || isLoading}
-                                            title="清空所有已完成的离线下载任务"
+                                            title="Clear all completed offline download tasks"
                                             style="background-color: #9C27B0; color: white;"
                                         >
-                                            清空
+                                            Clear
                                         </button>
                                         <button 
                                             class="b3-button b3-button--primary task-refresh-btn" 
@@ -2339,9 +2372,9 @@ export let plugin;
                                             disabled={isLoadingTasks}
                                         >
                                             {#if isLoadingTasks}
-                                                刷新中...
+                                                Refreshing...
                                             {:else}
-                                                刷新
+                                                Refresh
                                             {/if}
                                         </button>
                                     </div>
@@ -2351,12 +2384,12 @@ export let plugin;
                                     {#if isLoadingTasks}
                                         <div class="task-loading">
                                             <div class="loading-spinner"></div>
-                                            <p>加载任务列表中...</p>
+                                            <p>Loading task list...</p>
                                         </div>
                                     {:else if tasks.length === 0}
                                         <div class="task-empty">
                                             <div class="empty-icon">✅</div>
-                                            <p>暂无未完成任务</p>
+                                            <p>No unfinished tasks</p>
                                         </div>
                                     {:else}
                                         <div class="task-table-container">
@@ -2370,9 +2403,9 @@ export let plugin;
                                                                 on:change={toggleAllTasks}
                                                             />
                                                         </th>
-                                                        <th class="task-status-col">状态</th>
-                                                        <th class="task-creator-col">创建者</th>
-                                                        <th class="task-name-col">名称</th>
+                                                        <th class="task-status-col">Status</th>
+                                                        <th class="task-creator-col">Creator</th>
+                                                        <th class="task-name-col">Name</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -2400,7 +2433,7 @@ export let plugin;
                                                                 <span class="task-creator">{task.creator || 'admin'}</span>
                                                             </td>
                                                             <td class="task-name-col">
-                                                <span class="task-name-text" title="{task.name || '未知任务'}">
+                                                <span class="task-name-text" title="{task.name || 'Unknown task'}">
                                                     {formatTaskName(task.name)}
                                                 </span>
                                             </td>
@@ -2423,7 +2456,7 @@ export let plugin;
                 
                 <div class="function-footer">
                     <button class="b3-button" on:click={closeFunctionGroupDialog}>
-                        关闭
+                        Close
                     </button>
                 </div>
             </div>
@@ -2435,7 +2468,7 @@ export let plugin;
         <div class="preview-overlay" on:click={closePreview}>
             <div class="preview-dialog" on:click|stopPropagation>
                 <div class="preview-header">
-                    <h3>👁️ 预览: {previewFile?.name}</h3>
+                    <h3>👁️ Preview: {previewFile?.name}</h3>
                     <button class="close-btn" on:click={closePreview}>✕</button>
                 </div>
                 
@@ -2443,7 +2476,7 @@ export let plugin;
                     {#if isLoadingPreview}
                         <div class="preview-loading">
                             <div class="loading-spinner"></div>
-                            <span>加载预览中...</span>
+                            <span>Loading preview...</span>
                         </div>
                     {:else}
                         <div class="preview-content">
@@ -2454,7 +2487,7 @@ export let plugin;
                 
                 <div class="preview-footer">
                     <button class="b3-button" on:click={closePreview}>
-                        关闭
+                        Close
                     </button>
                 </div>
             </div>
@@ -2466,7 +2499,7 @@ export let plugin;
         <div class="preview-overlay" on:click={closeMoveDialog}>
             <div class="preview-dialog" on:click|stopPropagation style="max-width: 600px; max-height: 80vh;">
                 <div class="preview-header">
-                    <h3>📁 移动文件/文件夹: {moveItem}</h3>
+                    <h3>📁 Move file/folder: {moveItem}</h3>
                     <button class="close-btn" on:click={closeMoveDialog}>✕</button>
                 </div>
                 
@@ -2474,12 +2507,12 @@ export let plugin;
                     {#if isLoadingFolderTree}
                         <div class="preview-loading">
                             <div class="loading-spinner"></div>
-                            <span>加载文件夹树中...</span>
+                            <span>Loading folder tree...</span>
                         </div>
                     {:else}
                         <div class="move-content">
                             <div class="move-section">
-                                <h4>选择目标文件夹：</h4>
+                                <h4>Select target folder:</h4>
                                 <div class="folder-tree">
                                     <!-- 根目录选项 -->
                                     <div class="folder-item root-folder" 
@@ -2528,7 +2561,7 @@ export let plugin;
                                         type="checkbox" 
                                         bind:checked={allowOverwrite}
                                     />
-                                    <span>允许覆盖</span>
+                                    <span>Allow overwrite</span>
                                 </label>
                             </div>
                             
@@ -2541,7 +2574,7 @@ export let plugin;
                 
                 <div class="preview-footer">
                     <button class="b3-button" on:click={closeMoveDialog}>
-                        取消
+                        Cancel
                     </button>
                     <button 
                         class="b3-button b3-button--primary" 
@@ -2549,9 +2582,9 @@ export let plugin;
                         disabled={isMoving || !moveTargetPath || isLoadingFolderTree}
                     >
                         {#if isMoving}
-                            移动中...
+                            Moving...
                         {:else}
-                            确认移动
+                            Confirm Move
                         {/if}
                     </button>
                 </div>

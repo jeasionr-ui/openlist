@@ -25,8 +25,8 @@
 - ⭐ **免费使用**：插件免费，赞助仅用于激励开发
 
 <div align="center">
-  <img src="./doc/AliPay.JPG" alt="支付宝赞助" width="180" style="margin: 10px;">
-  <img src="./doc/WeChat.JPG" alt="微信赞助" width="180" style="margin: 10px;">
+  <img src="./AliPay.JPG" alt="支付宝赞助" width="180" style="margin: 10px;">
+  <img src="./WeChat.JPG" alt="微信赞助" width="180" style="margin: 10px;">
   <br>
   <small>扫码赞助支持开发 ❤️</small>
 </div>

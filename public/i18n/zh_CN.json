@@ -1,20 +1,140 @@
 {
-    "addTopBarIcon": "使用插件添加一个顶栏按钮",
+    "title": "AList 文件浏览器",
     "cancel": "取消",
     "save": "保存",
-    "byeMenu": "再见，菜单！",
-    "helloPlugin": "你好，插件！",
-    "byePlugin": "再见，插件！",
-    "showDialog": "弹出一个对话框",
-    "removedData": "数据已删除",
-    "confirmRemove": "确认删除 ${name} 中的数据？",
-    "insertEmoji": "插入表情",
-    "removeSpace": "移除空格",
-    "getTab": "在日志中打印出已打开的所有自定义页签",
-    "name": "思源",
-    "hello": {
-        "makesure": "使用这个模板之前，请阅读<a href=\"https://github.com/siyuan-note/plugin-sample\">官方教程</a>, 确保自己已经理解了插件的基本开发流程。"
+    "loading": "加载中...",
+    "login": "登录",
+    "logout": "退出登录",
+    "refresh": "刷新",
+    "upload": "上传",
+    "download": "下载",
+    "delete": "删除",
+    "rename": "重命名",
+    "move": "移动",
+    "preview": "预览",
+    "close": "关闭",
+    "confirm": "确认",
+    "back": "返回",
+    "create": "创建",
+    "select": "选择",
+    "selectAll": "全选",
+    "unselectAll": "取消全选",
+    "retry": "重试",
+    "clear": "清空",
+    "test": "测试",
+    "embed": "嵌入到笔记",
+    
+    "settings": {
+        "serverUrl": {
+            "title": "AList 服务器地址",
+            "description": "AList 服务器的完整地址，例如：http://localhost:5244"
+        },
+        "username": {
+            "title": "用户名",
+            "description": "AList 登录用户名"
+        },
+        "password": {
+            "title": "密码",
+            "description": "AList 登录密码"
+        },
+        "rootPath": {
+            "title": "根路径",
+            "description": "AList 文件浏览的根路径，默认为根目录"
+        },
+        "autoLogin": {
+            "title": "自动登录",
+            "description": "启动时自动登录到 AList 服务器"
+        },
+        "testConnection": {
+            "title": "测试连接",
+            "description": "测试与 AList 服务器的连接",
+            "label": "测试连接"
+        },
+        "lastPath": {
+            "title": "上次访问路径",
+            "description": "记录上次访问的文件夹路径，用于下次打开时恢复位置"
+        },
+        "usage": {
+            "title": "使用说明",
+            "description": "配置完成后，AList 文件浏览器将显示在侧边栏中。请确保 AList 服务器正在运行并且网络连接正常。"
+        }
     },
-    "hintTitle": "关于",
-    "hintDesc": "<a href='https://github.com/siyuan-note/plugin-sample-vite-svelte'>🔗 plugin-sample-vite-svelte</a><br>💻 @frostime<br>💻 @88250<br>💻 @zxkmm"
+    
+    "errors": {
+        "configRequired": "请先在设置中配置 AList 服务器信息",
+        "loginRequired": "请先登录",
+        "selectFiles": "请选择要上传的文件",
+        "selectFolders": "请选择要删除的文件夹",
+        "selectFilesToRename": "请选择要重命名的文件",
+        "selectSingleFileToRename": "重命名操作只能选择一个文件",
+        "selectFilesToMove": "请选择要移动的文件或文件夹",
+        "selectSingleItemToMove": "移动操作只能选择一个文件或文件夹",
+        "selectTargetFolder": "请选择目标文件夹",
+        "selectFoldersToMove": "请选择要移动的文件夹",
+        "selectSingleFolderToMove": "移动操作只能选择一个文件夹",
+        "selectFilesToDelete": "请选择要删除的文件",
+        "enterDownloadUrl": "请输入下载链接",
+        "enterFolderName": "请输入文件夹名称",
+        "fileNameRequired": "文件名不能为空",
+        "invalidServerUrl": "⚠️ 服务器地址格式不正确，请输入有效的URL（如：http://localhost:5244）",
+        "networkError": "🌐 网络连接失败: 无法连接到AList服务器，请检查服务器地址和网络连接",
+        "authError": "🔐 认证失败: 用户名或密码错误，请检查登录凭据",
+        "forbiddenError": "⛔ 访问被拒绝: 账户权限不足或被禁用",
+        "notFoundError": "❓ 服务器未找到: 请检查AList服务器地址是否正确",
+        "timeoutError": "⏱️ 连接超时: 服务器响应超时，请稍后重试",
+        "loginExpired": "🔐 登录已过期: 请重新登录AList服务器",
+        "accessDenied": "⛔ 访问被拒绝: 没有权限访问此路径",
+        "pathNotFound": "📂 路径不存在: 指定的文件夹路径不存在",
+        "loadTimeout": "⏱️ 加载超时: 服务器响应超时，请稍后重试",
+        "unknownError": "❌ 未知错误，请检查服务器配置"
+    },
+    
+    "messages": {
+        "serverUrlSaved": "✅ 服务器地址已保存",
+        "testingConnection": "正在测试连接...",
+        "connectionSuccess": "连接成功！",
+        "connectionFailed": "连接失败：无效的响应",
+        "configFirst": "请先配置服务器地址、用户名和密码"
+    },
+    
+    "placeholders": {
+        "folderName": "输入文件夹名称",
+        "newFileName": "请输入新的文件名",
+        "downloadUrls": "请输入下载链接，每行一个\n例如：\nhttps://example.com/file1.zip\nhttps://example.com/file2.pdf"
+    },
+    
+    "tooltips": {
+        "previewFile": "预览文件",
+        "downloadFile": "下载文件",
+        "embedToNote": "嵌入到笔记",
+        "selectFolder": "选择文件夹",
+        "selectFile": "选择文件",
+        "pdfPreview": "PDF 预览",
+        "officePreview": "Office 文档预览",
+        "epubPreview": "EPUB 预览",
+        "moveSelectedFolders": "移动选中的文件夹",
+        "renameSelectedFile": "重命名选中的文件",
+        "moveSelectedFiles": "移动选中的文件",
+        "retrySelectedTasks": "重试已选中的离线下载任务",
+        "retryFailedTasks": "重试所有失败的离线下载任务",
+        "clearSuccessTasks": "清空所有已成功的离线下载任务",
+        "clearCompletedTasks": "清空所有已完成的离线下载任务",
+        "unknownTask": "未知任务"
+    },
+    
+    "tabs": {
+        "folder": "文件夹",
+        "file": "文件",
+        "upload": "上传",
+        "task": "任务",
+        "online": "在线上传",
+        "offline": "离线下载"
+    },
+    
+    "dialogs": {
+        "renameFile": {
+            "title": "重命名文件",
+            "placeholder": "请输入新的文件名"
+        }
+    }
 }
