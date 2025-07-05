@@ -9,18 +9,20 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # Checkout
+      # Checkout with full history for changelog generation
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # Install Node.js
       - name: Install Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           registry-url: "https://registry.npmjs.org"
 
-        # Install pnpm
+      # Install pnpm
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         id: pnpm-install
@@ -37,7 +39,7 @@ jobs:
 
       # Setup pnpm cache
       - name: Setup pnpm cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -52,7 +54,41 @@ jobs:
       - name: Build for production
         run: pnpm build
 
-      - name: Release
+      # Extract version from tag
+      - name: Extract version
+        id: extract_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "VERSION_NUMBER=${VERSION#v}" >> $GITHUB_OUTPUT
+
+      # Generate release notes from CHANGELOG.md
+      - name: Extract release notes
+        id: extract_notes
+        run: |
+          VERSION=${{ steps.extract_version.outputs.VERSION }}
+          # Extract the section for this version from CHANGELOG.md
+          if [ -f "CHANGELOG.md" ]; then
+            # Find the section for this version and extract until the next version or end of file
+            awk "/^## $VERSION/,/^## [0-9]/ { if (/^## [0-9]/ && !/^## $VERSION/) exit; if (!/^## $VERSION/) print }" CHANGELOG.md > release_notes.txt
+            # If no specific version found, try without 'v' prefix
+            if [ ! -s release_notes.txt ]; then
+              VERSION_NO_V=${{ steps.extract_version.outputs.VERSION_NUMBER }}
+              awk "/^## $VERSION_NO_V/,/^## [0-9]/ { if (/^## [0-9]/ && !/^## $VERSION_NO_V/) exit; if (!/^## $VERSION_NO_V/) print }" CHANGELOG.md > release_notes.txt
+            fi
+            # If still empty, provide default content
+            if [ ! -s release_notes.txt ]; then
+              echo "## 🚀 新版本发布\n\n本版本包含功能改进和问题修复。\n\n### 📋 完整更新日志\n\n请查看 [CHANGELOG.md](./CHANGELOG.md) 获取详细信息。" > release_notes.txt
+            fi
+          else
+            echo "## 🚀 新版本发布\n\n本版本包含功能改进和问题修复。" > release_notes.txt
+          fi
+          echo "RELEASE_NOTES<<EOF" >> $GITHUB_OUTPUT
+          cat release_notes.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      # Create GitHub Release
+      - name: Create Release
         uses: ncipollo/release-action@v1
         with:
           allowUpdates: true
@@ -60,3 +96,7 @@ jobs:
           artifacts: "package.zip"
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: false
+          name: "AList 文件浏览器插件 ${{ steps.extract_version.outputs.VERSION }}"
+          body: ${{ steps.extract_notes.outputs.RELEASE_NOTES }}
+          generateReleaseNotes: true
+          makeLatest: true
