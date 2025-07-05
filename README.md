@@ -1,210 +1,210 @@
 
-# AList 文件浏览器插件
+# AList File Browser Plugin
 
-> 🚀 将 AList(OpenList) 文件管理器无缝集成到思源笔记侧边栏的强大插件
+> 🚀 A powerful plugin that seamlessly integrates AList(OpenList) file manager into SiYuan Notes sidebar
 
 [![GitHub release](https://img.shields.io/github/v/release/jeasionr-ui/openlist)](https://github.com/jeasionr-ui/openlist/releases)
 [![License](https://img.shields.io/github/license/jeasionr-ui/openlist)](https://github.com/jeasionr-ui/openlist/blob/main/LICENSE)
 [![Downloads](https://img.shields.io/github/downloads/jeasionr-ui/openlist/total)](https://github.com/jeasionr-ui/openlist/releases)
 
-## 📖 项目简介
+## 📖 Project Overview
 
-**AList 文件浏览器插件** 为思源笔记用户提供了完整的文件管理解决方案。通过深度集成 AList(OpenList) 文件管理器，您可以：
+**AList File Browser Plugin** provides a complete file management solution for SiYuan Notes users. Through deep integration with AList(OpenList) file manager, you can:
 
-- 🗂️ 在思源笔记侧边栏中直接浏览和管理文件
-- 📎 将 AList 文件无缝嵌入到笔记内容中
-- 🔄 实现笔记与文件管理的一体化体验
-- 🌐 支持本地和远程文件服务器访问
+- 🗂️ Browse and manage files directly in SiYuan Notes sidebar
+- 📎 Seamlessly embed AList files into note content
+- 🔄 Achieve integrated experience between notes and file management
+- 🌐 Support both local and remote file server access
 
-## 💝 支持开发
+## 💝 Support Development
 
-如果这个插件对您有帮助，欢迎支持开发者：
+If this plugin helps you, welcome to support the developer:
 
-- 🎯 **自愿赞助**：0.5元/月起（完全自愿，无任何功能限制）
-- 🚀 **持续更新**：您的支持将激励我持续完善插件功能
-- ⭐ **免费使用**：插件免费，赞助仅用于激励开发
+- 🎯 **Voluntary Sponsorship**: Starting from 0.5 yuan/month (completely voluntary, no feature restrictions)
+- 🚀 **Continuous Updates**: Your support will motivate me to continuously improve plugin features
+- ⭐ **Free to Use**: Plugin is free, sponsorship is only for development motivation
 
 <div align="center">
-  <img src="./doc/AliPay.JPG" alt="支付宝赞助" width="180" style="margin: 10px;">
-  <img src="./doc/WeChat.JPG" alt="微信赞助" width="180" style="margin: 10px;">
+  <img src="./doc/AliPay.JPG" alt="Alipay Sponsorship" width="180" style="margin: 10px;">
+  <img src="./doc/WeChat.JPG" alt="WeChat Sponsorship" width="180" style="margin: 10px;">
   <br>
-  <small>扫码赞助支持开发 ❤️</small>
+  <small>Scan to support development ❤️</small>
 </div>
 
-## ✨ 功能特性
+## ✨ Features
 
-### 🗂️ 文件管理
-- ✅ **完整文件操作**：浏览、上传、下载、删除、重命名、移动
-- 📁 **文件夹管理**：创建、删除、重命名、移动文件夹
-- 🔄 **批量操作**：多选文件进行批量处理
-- 🎯 **拖拽上传**：直观的拖拽式文件上传体验
-- 🔍 **智能搜索**：快速定位和筛选文件
+### 🗂️ File Management
+- ✅ **Complete File Operations**: Browse, upload, download, delete, rename, move
+- 📁 **Folder Management**: Create, delete, rename, move folders
+- 🔄 **Batch Operations**: Multi-select files for batch processing
+- 🎯 **Drag & Drop Upload**: Intuitive drag-and-drop file upload experience
+- 🔍 **Smart Search**: Quick file location and filtering
 
-### 🎬 多媒体预览
-- 🖼️ **图片预览**：JPG、PNG、GIF、WebP、SVG、BMP
-- 🎥 **视频播放**：MP4、WebM、OGV、AVI、MOV
-- 🎵 **音频播放**：MP3、WAV、OGG、FLAC、AAC
-- 📄 **文档查看**：TXT、MD、JSON、XML、CSV
-- 📋 **PDF 支持**：在线 PDF 文档预览
+### 🎬 Multimedia Preview
+- 🖼️ **Image Preview**: JPG, PNG, GIF, WebP, SVG, BMP
+- 🎥 **Video Playback**: MP4, WebM, OGV, AVI, MOV
+- 🎵 **Audio Playback**: MP3, WAV, OGG, FLAC, AAC
+- 📄 **Document Viewing**: TXT, MD, JSON, XML, CSV
+- 📋 **PDF Support**: Online PDF document preview
 
-### 🔐 安全与认证
-- 🔑 **令牌认证**：基于 AList 服务器的安全身份验证
-- 🚀 **自动登录**：启动时自动连接服务器
-- 👥 **权限控制**：完全遵循 AList 服务器权限设置
-- 🛡️ **数据安全**：所有操作通过加密连接传输
+### 🔐 Security & Authentication
+- 🔑 **Token Authentication**: Secure identity verification based on AList server
+- 🚀 **Auto Login**: Automatically connect to server on startup
+- 👥 **Permission Control**: Fully comply with AList server permission settings
+- 🛡️ **Data Security**: All operations transmitted through encrypted connections
 
-### 🌟 用户体验
-- 🌍 **多语言支持**：中文、英文界面完整支持
-- 📱 **响应式设计**：完美适配桌面端和移动端
-- ⚡ **实时反馈**：文件操作进度实时显示
-- 🎨 **现代界面**：简洁美观的用户界面设计
-- 🔧 **智能错误处理**：友好的错误提示和自动恢复
+### 🌟 User Experience
+- 🌍 **Multi-language Support**: Complete support for Chinese and English interfaces
+- 📱 **Responsive Design**: Perfect adaptation for desktop and mobile
+- ⚡ **Real-time Feedback**: Real-time display of file operation progress
+- 🎨 **Modern Interface**: Clean and beautiful user interface design
+- 🔧 **Smart Error Handling**: Friendly error prompts and automatic recovery
 
-## 📦 安装方式
+## 📦 Installation
 
-### 🏪 方式一：思源笔记集市（推荐）
+### 🏪 Method 1: SiYuan Notes Marketplace (Recommended)
 
-1. 📱 打开思源笔记应用
-2. ⚙️ 进入 `设置` → `集市` → `插件`
-3. 🔍 搜索 "**AList File Browser**" 或 "**openlist**"
-4. ⬇️ 点击 `下载` 并启用插件
-5. 🎉 安装完成，即可在侧边栏使用
+1. 📱 Open SiYuan Notes application
+2. ⚙️ Go to `Settings` → `Marketplace` → `Plugins`
+3. 🔍 Search for "**AList File Browser**" or "**openlist**"
+4. ⬇️ Click `Download` and enable the plugin
+5. 🎉 Installation complete, ready to use in sidebar
 
-### 📦 方式二：手动安装
+### 📦 Method 2: Manual Installation
 
-1. 🌐 访问 [GitHub Releases](https://github.com/jeasionr-ui/openlist/releases) 页面
-2. ⬇️ 下载最新版本的 `alist.zip` 文件
-3. 📁 解压到思源笔记工作空间的 `data/plugins/` 目录
-4. 🔄 重启思源笔记应用
-5. ✅ 在 `设置` → `集市` → `已下载` 中启用插件
+1. 🌐 Visit [GitHub Releases](https://github.com/jeasionr-ui/openlist/releases) page
+2. ⬇️ Download the latest `alist.zip` file
+3. 📁 Extract to `data/plugins/` directory in SiYuan Notes workspace
+4. 🔄 Restart SiYuan Notes application
+5. ✅ Enable plugin in `Settings` → `Marketplace` → `Downloaded`
 
-> 💡 **提示**：推荐使用集市安装，可自动获取更新通知
+> 💡 **Tip**: Marketplace installation is recommended for automatic update notifications
 
-## ⚙️ 配置设置
+## ⚙️ Configuration
 
-### 🔧 首次配置
+### 🔧 Initial Setup
 
-#### 1. 打开插件设置
-- 📋 进入 `设置` → `插件` → `AList 文件浏览器`
+#### 1. Open Plugin Settings
+- 📋 Go to `Settings` → `Plugins` → `AList File Browser`
 
-#### 2. 配置连接参数
+#### 2. Configure Connection Parameters
 
-| 配置项 | 说明 | 示例 |
-|--------|------|------|
-| 🌐 **服务器地址** | AList 服务器的完整地址 | `http://localhost:5244`<br>`https://files.example.com` |
-| 👤 **用户名** | AList 服务器登录用户名 | `admin` 或您的用户名 |
-| 🔐 **密码** | 对应的登录密码 | 您的 AList 密码 |
-| 📁 **根路径** | 文件浏览的起始目录 | `/`（默认）或 `/documents` |
-| 🚀 **自动登录** | 启动时自动连接服务器 | ✅ 推荐开启 |
+| Configuration | Description | Example |
+|---------------|-------------|----------|
+| 🌐 **Server Address** | Complete address of AList server | `http://localhost:5244`<br>`https://files.example.com` |
+| 👤 **Username** | AList server login username | `admin` or your username |
+| 🔐 **Password** | Corresponding login password | Your AList password |
+| 📁 **Root Path** | Starting directory for file browsing | `/` (default) or `/documents` |
+| 🚀 **Auto Login** | Automatically connect to server on startup | ✅ Recommended to enable |
 
-#### 3. 保存设置
-- 💾 点击 `保存` 按钮完成配置
-- 🔄 插件将自动尝试连接服务器
+#### 3. Save Settings
+- 💾 Click `Save` button to complete configuration
+- 🔄 Plugin will automatically attempt to connect to server
 
-### 📋 AList 服务器要求
+### 📋 AList Server Requirements
 
-| 要求项目 | 最低要求 | 推荐配置 |
-|----------|----------|----------|
-| 🔢 **AList 版本** | v3.0+ | v3.8+ |
-| 🌐 **网络访问** | HTTP/HTTPS 可达 | HTTPS + 域名 |
-| 👥 **用户权限** | 读取权限 | 完整文件操作权限 |
-| 🔒 **安全设置** | 基础认证 | 启用 CORS + Token |
+| Requirement | Minimum | Recommended |
+|-------------|---------|-------------|
+| 🔢 **AList Version** | v3.0+ | v3.8+ |
+| 🌐 **Network Access** | HTTP/HTTPS reachable | HTTPS + domain |
+| 👥 **User Permissions** | Read permissions | Full file operation permissions |
+| 🔒 **Security Settings** | Basic authentication | Enable CORS + Token |
 
-> ⚠️ **注意**：确保思源笔记可以正常访问您的 AList 服务器地址
+> ⚠️ **Note**: Ensure SiYuan Notes can normally access your AList server address
 
-## 🚀 使用指南
+## 🚀 Usage Guide
 
-### 🎯 基本操作流程
+### 🎯 Basic Operation Flow
 
-#### 1. 🔗 连接服务器
-- 🖱️ 点击思源笔记侧边栏中的 **文件夹图标**（AList 文件浏览器）
-- ⚙️ 首次使用需要在插件设置中配置服务器地址、用户名和密码
-- 🚀 启用自动登录后，每次打开会自动连接到 AList 服务器
-- ✅ 连接成功后显示文件列表，失败时会显示详细错误信息
+#### 1. 🔗 Connect to Server
+- 🖱️ Click the **folder icon** (AList File Browser) in SiYuan Notes sidebar
+- ⚙️ First-time use requires configuring server address, username, and password in plugin settings
+- 🚀 After enabling auto login, it will automatically connect to AList server each time opened
+- ✅ Shows file list on successful connection, displays detailed error information on failure
 
-#### 2. 📁 文件浏览
-- 📂 **目录导航**：点击文件夹名称进入子目录
-- 🔙 **返回上级**：点击路径中的上级目录名称快速跳转
-- 📍 **路径显示**：顶部显示当前完整路径
-- 🔄 **刷新列表**：点击刷新按钮重新加载当前目录
+#### 2. 📁 File Browsing
+- 📂 **Directory Navigation**: Click folder name to enter subdirectory
+- 🔙 **Go Back**: Click parent directory name in path for quick navigation
+- 📍 **Path Display**: Top shows current complete path
+- 🔄 **Refresh List**: Click refresh button to reload current directory
 
-#### 3. ⚡ 文件操作
-- 👆 **文件预览**：点击文件名预览支持的文件类型（图片、视频、音频、PDF、Office文档、文本等）
-- ⬇️ **文件下载**：通过预览对话框或直接访问文件链接下载
-- 📋 **复制链接**：获取文件的直接访问链接
-- 🔗 **协议链接**：支持 `alist://` 协议链接，可在思源笔记中创建文件引用
+#### 3. ⚡ File Operations
+- 👆 **File Preview**: Click filename to preview supported file types (images, videos, audio, PDF, Office documents, text, etc.)
+- ⬇️ **File Download**: Download through preview dialog or direct file link access
+- 📋 **Copy Link**: Get direct access link to file
+- 🔗 **Protocol Link**: Support `alist://` protocol links, can create file references in SiYuan Notes
 
-### 🚀 高级功能
+### 🚀 Advanced Features
 
-#### 📦 文件管理操作
-- ⬆️ **文件上传**：支持在线上传和离线下载两种模式
-- 📁 **新建文件夹**：在当前目录创建新文件夹
-- 🗑️ **删除操作**：删除选中的文件或文件夹
-- 📋 **批量选择**：支持多选文件进行批量操作
-- 🔄 **移动文件**：将文件或文件夹移动到其他目录
+#### 📦 File Management Operations
+- ⬆️ **File Upload**: Support both online upload and offline download modes
+- 📁 **New Folder**: Create new folder in current directory
+- 🗑️ **Delete Operation**: Delete selected files or folders
+- 📋 **Batch Selection**: Support multi-select files for batch operations
+- 🔄 **Move Files**: Move files or folders to other directories
 
-#### 🔍 文件预览功能
-- 🖼️ **图片预览**：支持 JPG、PNG、GIF、WebP 等格式
-- 🎬 **视频播放**：支持 MP4、WebM、AVI、MOV 等格式
-- 🎵 **音频播放**：支持 MP3、WAV、FLAC、AAC 等格式
-- 📄 **文档预览**：支持 PDF、Office 文档（Word、Excel、PowerPoint）
-- 📝 **文本查看**：支持 Markdown、TXT 等文本文件的渲染显示
+#### 🔍 File Preview Features
+- 🖼️ **Image Preview**: Support JPG, PNG, GIF, WebP and other formats
+- 🎬 **Video Playback**: Support MP4, WebM, AVI, MOV and other formats
+- 🎵 **Audio Playback**: Support MP3, WAV, FLAC, AAC and other formats
+- 📄 **Document Preview**: Support PDF, Office documents (Word, Excel, PowerPoint)
+- 📝 **Text Viewing**: Support Markdown, TXT and other text file rendering display
 
-#### ⚡ 上传与下载管理
-- 📊 **上传进度**：实时显示文件上传进度
-- 🌐 **离线下载**：支持通过 URL 进行离线下载
-- 📋 **任务管理**：查看和管理上传/下载任务状态
-- ⚙️ **上传选项**：可配置覆盖模式、流式上传等参数
+#### ⚡ Upload & Download Management
+- 📊 **Upload Progress**: Real-time display of file upload progress
+- 🌐 **Offline Download**: Support offline download through URL
+- 📋 **Task Management**: View and manage upload/download task status
+- ⚙️ **Upload Options**: Configurable overwrite mode, streaming upload and other parameters
 
-## 🔧 故障排除
+## 🔧 Troubleshooting
 
-### 常见问题解决
+### Common Problem Solutions
 
-| 问题 | 可能原因 | 解决方案 |
-|------|----------|----------|
-| 登录失败 | 服务器地址、用户名或密码错误 | 检查配置信息，确认 AList 服务器状态 |
-| 连接超时 | 网络问题或服务器不可达 | 检查网络连接，确认服务器地址正确 |
-| 上传失败 | 文件权限或存储空间不足 | 检查 AList 服务器的存储空间和权限设置 |
-| 插件无响应 | 插件未正确加载 | 重启思源笔记，确认插件已启用 |
-| 文件预览异常 | 文件格式不支持或文件损坏 | 尝试下载文件或使用其他工具打开 |
+| Problem | Possible Cause | Solution |
+|---------|----------------|----------|
+| Login Failed | Incorrect server address, username or password | Check configuration information, confirm AList server status |
+| Connection Timeout | Network issues or server unreachable | Check network connection, confirm server address is correct |
+| Upload Failed | File permissions or insufficient storage space | Check AList server storage space and permission settings |
+| Plugin Unresponsive | Plugin not loaded correctly | Restart SiYuan Notes, confirm plugin is enabled |
+| File Preview Exception | Unsupported file format or corrupted file | Try downloading file or use other tools to open |
 
-### ⚠️ 已知问题
+### ⚠️ Known Issues
 
-| 问题描述 | 影响程度 | 临时解决方案 | 修复状态 |
-|----------|----------|--------------|----------|
-| 上传文件后不立即显示 | 🟡 中等 | 手动点击刷新按钮 | 🔄 开发中 |
-| 移动文件后原位置仍显示 | 🟡 中等 | 关闭功能组重新打开 | 🔄 开发中 |
+| Issue Description | Impact Level | Temporary Solution | Fix Status |
+|-------------------|--------------|-------------------|------------|
+| Files not immediately displayed after upload | 🟡 Medium | Manually click refresh button | 🔄 In Development |
+| Original location still shows after moving files | 🟡 Medium | Close and reopen function group | 🔄 In Development |
 
-> 📝 **说明**：这些问题主要由 AList 缓存机制导致，我们正在开发自动刷新功能来解决
+> 📝 **Note**: These issues are mainly caused by AList caching mechanism, we are developing auto-refresh functionality to resolve them
 
-### 调试模式
+### Debug Mode
 
-1. 在插件设置中启用 `调试模式`
-2. 打开浏览器开发者工具
-3. 查看 Console 标签页中的详细日志信息
-4. 将错误信息反馈给开发者
+1. Enable `Debug Mode` in plugin settings
+2. Open browser developer tools
+3. Check detailed log information in Console tab
+4. Report error information to developer
 
-### 性能优化建议
+### Performance Optimization Suggestions
 
-- **大文件处理**：建议分批上传大量文件
-- **网络优化**：使用稳定的网络连接
-- **缓存清理**：定期清理浏览器缓存
+- **Large File Handling**: Recommend batch uploading large numbers of files
+- **Network Optimization**: Use stable network connection
+- **Cache Cleanup**: Regularly clear browser cache
 
-## 🤝 支持与反馈
+## 🤝 Support & Feedback
 
-### 获取帮助
+### Getting Help
 
-- 📧 **邮件联系**：[jeasionr@foxmail.com](mailto:jeasionr@foxmail.com)
-- 🐛 **问题反馈**：[GitHub Issues](https://github.com/jeasionr-ui/openlist/issues)
-- 💡 **功能建议**：欢迎在 GitHub 上提出新功能建议
-- ⭐ **项目支持**：如果插件对您有帮助，请为项目点星
+- 📧 **Email Contact**: [jeasionr@foxmail.com](mailto:jeasionr@foxmail.com)
+- 🐛 **Issue Reporting**: [GitHub Issues](https://github.com/jeasionr-ui/openlist/issues)
+- 💡 **Feature Suggestions**: Welcome to propose new feature suggestions on GitHub
+- ⭐ **Project Support**: If the plugin helps you, please star the project
 
-### 贡献方式
+### Contributing
 
-- 🔍 **测试反馈**：报告使用中遇到的问题
-- 📝 **文档改进**：帮助完善使用文档
-- 🌐 **翻译贡献**：协助多语言本地化
-- 💻 **代码贡献**：提交功能改进或修复
+- 🔍 **Testing Feedback**: Report issues encountered during use
+- 📝 **Documentation Improvement**: Help improve usage documentation
+- 🌐 **Translation Contribution**: Assist with multi-language localization
+- 💻 **Code Contribution**: Submit feature improvements or fixes
 
 ## 📋 更新日志
 
