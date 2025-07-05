@@ -6,6 +6,7 @@
 <script lang="ts">
 import { onDestroy, onMount } from "svelte";
 import { pushMsg } from "./api";
+import { inputDialog } from "./libs/dialog";
 export let plugin;
 
     // i18n support - use plugin's built-in i18n data
@@ -32,7 +33,7 @@ export let plugin;
         
         // Replace parameters if provided
         if (params) {
-            return value.replace(/\${(\w+)}/g, (match, paramKey) => {
+            return value.replace(/\{(\w+)\}/g, (match, paramKey) => {
                 return params[paramKey] || match;
             });
         }
@@ -199,7 +200,7 @@ export let plugin;
 
             const data = await response.json();
             if (data.code !== 200) {
-                throw new Error(data.message || 'Failed to get file list');
+                throw new Error(data.message || t('errors.failedToGetFileList'));
             }
 
             files = data.data.content || [];
@@ -430,7 +431,7 @@ export let plugin;
             
             const result = await response.json();
             if (result.code !== 200) {
-                throw new Error(result.message || 'Failed to get file info');
+                throw new Error(result.message || t('errors.failedToGetFileInfo'));
             }
             
             const fileInfo = result.data;
@@ -658,7 +659,7 @@ export let plugin;
                         </div>
                     `;
                 } catch (textErr) {
-                    throw new Error('Unable to load Markdown content');
+                    throw new Error(t('errors.unableToLoadMarkdown'));
                 }
             } else if (file.name.match(/\.(txt|json|xml|html|css|js|ts|py|java|cpp|c|h)$/i)) {
                 // 其他文本文件预览
@@ -678,7 +679,7 @@ export let plugin;
                         </div>
                     `;
                 } catch (textErr) {
-                    throw new Error('Unable to load text content');
+                    throw new Error(t('errors.unableToLoadText'));
                 }
             } else {
                 // 不支持的文件类型
@@ -696,7 +697,7 @@ export let plugin;
             
         } catch (err) {
             console.error("Preview failed:", err);
-            previewContent = `<div class="preview-error">Preview failed: ${err.message}</div>`;
+            previewContent = `<div class="preview-error">${t('errors.previewFailed')}: ${err.message}</div>`;
         } finally {
             isLoadingPreview = false;
         }
@@ -748,7 +749,7 @@ export let plugin;
      */
     async function createFolder() {
         if (!newFolderName.trim()) {
-            error = "Please enter folder name";
+            error = t('errors.enterFolderName');
             return;
         }
 
@@ -776,19 +777,19 @@ export let plugin;
             
             const result = await response.json();
             if (result.code !== 200) {
-                throw new Error(result.message || 'Failed to create folder');
+                throw new Error(result.message || t('errors.failedToCreateFolder'));
             }
             
             // 刷新文件列表（强制刷新以确保删除的文件不再显示）
             await loadFiles(currentPath, true);
             
             // 显示成功提示
-            await pushMsg(`Folder "${newFolderName}" created successfully!`);
+            await pushMsg(t('messages.folderCreatedSuccess', {name: newFolderName}));
             newFolderName = "";
             
         } catch (err) {
             console.error("Create folder failed:", err);
-            error = `Failed to create folder: ${err.message || t('errors.unknownError')}`;
+            error = `${t('messages.failedToCreateFolder')}: ${err.message || t('errors.unknownError')}`;
         } finally {
             isCreatingFolder = false;
         }
@@ -811,11 +812,11 @@ export let plugin;
      */
     async function deleteSelectedFolders() {
         if (selectedFolders.size === 0) {
-            error = "Please select folders to delete";
+            error = t('errors.selectFoldersToDelete');
             return;
         }
 
-        if (!confirm(`Are you sure you want to delete the selected ${selectedFolders.size} folders? This operation cannot be undone!`)) {
+        if (!confirm(t('messages.confirmDeleteFolders', {count: selectedFolders.size}))) {
             return;
         }
 
@@ -841,12 +842,12 @@ export let plugin;
                 });
                 
                 if (!response.ok) {
-                    throw new Error(`Failed to delete folder ${folderName}: ${response.status}`);
+                    throw new Error(`${t('messages.failedToDeleteFolders')}: ${response.status}`);
                 }
                 
                 const result = await response.json();
                 if (result.code !== 200) {
-                    throw new Error(result.message || `Failed to delete folder ${folderName}`);
+                    throw new Error(result.message || t('messages.failedToDeleteFolders'));
                 }
             }
             
@@ -854,12 +855,12 @@ export let plugin;
             await loadFiles(currentPath, true);
             
             // 显示成功提示
-            await pushMsg(`Successfully deleted ${selectedFolders.size} folders!`);
+            await pushMsg(t('messages.foldersDeletedSuccess', {count: selectedFolders.size}));
             selectedFolders.clear();
             
         } catch (err) {
             console.error("Delete folders failed:", err);
-            error = `Failed to delete folders: ${err.message || t('errors.unknownError')}`;
+            error = `${t('messages.failedToDeleteFolders')}: ${err.message || t('errors.unknownError')}`;
         } finally {
             isDeletingFolders = false;
         }
@@ -885,23 +886,22 @@ export let plugin;
      */
     async function renameSelectedFile() {
         if (selectedFiles.size === 0) {
-            error = "Please select a file to rename";
+            error = t('errors.selectFileToRename');
             return;
         }
 
         if (selectedFiles.size > 1) {
-            error = "Rename operation can only select one file";
+            error = t('errors.renameOnlyOneFile');
             return;
         }
 
         const fileName = Array.from(selectedFiles)[0];
         
         // 使用inputDialog替换prompt
-        const { inputDialog } = await import('./libs/dialog');
         
         inputDialog({
             title: "Rename File",
-            placeholder: "Please enter new file name",
+            placeholder: t('errors.newFileName'),
             defaultText: fileName,
             confirm: async (newName) => {
                  const newFileName = newName as string;
@@ -910,7 +910,7 @@ export let plugin;
                  }
                  
                  if (!newFileName.trim()) {
-                     error = "File name cannot be empty";
+                     error = t('errors.fileNameRequired');
                      return;
                  }
 
@@ -934,23 +934,23 @@ export let plugin;
                      });
                      
                      if (!response.ok) {
-                         throw new Error(`Failed to rename file: ${response.status}`);
+                         throw new Error(`${t('messages.failedToRenameFile')}: ${response.status}`);
                      }
                      
                      const result = await response.json();
                      if (result.code !== 200) {
-                         throw new Error(result.message || 'Failed to rename file');
+                         throw new Error(result.message || t('messages.failedToRenameFile'));
                      }
                      
                      // 显示成功提示
-                     await pushMsg(`File renamed successfully: ${fileName} → ${newFileName.trim()}`);
+                     await pushMsg(t('messages.fileRenamedSuccess', {oldName: fileName, newName: newFileName.trim()}));
                      
                      // 使用新的刷新函数，确保完全重新渲染
                      await refreshFileList();
                     
                 } catch (err) {
                     console.error("Rename file failed:", err);
-                    error = `Failed to rename file: ${err.message || t('errors.unknownError')}`;
+                    error = `${t('messages.failedToRenameFile')}: ${err.message || t('errors.unknownError')}`;
                 } finally {
                     isDeletingFiles = false;
                 }
@@ -966,12 +966,12 @@ export let plugin;
      */
     async function moveSelectedItem() {
         if (selectedFiles.size === 0) {
-            error = "Please select a file or folder to move";
+            error = t('errors.selectItemToMove');
             return;
         }
 
         if (selectedFiles.size > 1) {
-            error = "Move operation can only select one file or folder";
+            error = t('errors.moveOnlyOneItem');
             return;
         }
 
@@ -990,7 +990,7 @@ export let plugin;
      */
     async function loadFolderTree() {
         if (!isLoggedIn || !token) {
-            error = "Please login first";
+            error = t('errors.loginRequired');
             return;
         }
 
@@ -1020,7 +1020,7 @@ export let plugin;
             
             const data = await response.json();
             if (data.code !== 200) {
-                throw new Error(data.message || 'Failed to get folder list');
+                throw new Error(data.message || t('errors.failedToGetFolderList'));
             }
             
             // 为每个文件夹添加树形结构所需的属性
@@ -1033,7 +1033,7 @@ export let plugin;
             }));
         } catch (err) {
             console.error("Load folder tree failed:", err);
-            error = `Failed to load folder tree: ${err.message || 'Unknown error'}`;
+            error = `${t('messages.failedToLoadFolderTree')}: ${err.message || t('errors.unknownError')}`;
         } finally {
             isLoadingFolderTree = false;
         }
@@ -1071,7 +1071,7 @@ export let plugin;
             
             const data = await response.json();
             if (data.code !== 200) {
-                throw new Error(data.message || 'Failed to get subfolders');
+                throw new Error(data.message || t('errors.failedToGetSubfolders'));
             }
             
             // 更新文件夹树中对应节点的子文件夹
@@ -1080,7 +1080,7 @@ export let plugin;
             
         } catch (err) {
             console.error("Load subfolders failed:", err);
-            error = `Failed to load subfolders: ${err.message || 'Unknown error'}`;
+            error = `${t('messages.failedToLoadSubfolders')}: ${err.message || t('errors.unknownError')}`;
         } finally {
             loadingSubfolders.delete(folderPath);
             loadingSubfolders = loadingSubfolders; // 触发响应式更新
@@ -1170,7 +1170,7 @@ export let plugin;
      */
     async function executeMove() {
         if (!moveItem || !moveTargetPath) {
-            error = "Please select target folder";
+            error = t('functionGroup.pleaseSelectTargetFolder');
             return;
         }
 
@@ -1223,7 +1223,7 @@ export let plugin;
                 // 关闭对话框
                 closeMoveDialog();
             } else {
-                throw new Error(result.message || 'Move operation failed');
+                throw new Error(result.message || t('errors.moveOperationFailed'));
             }
             
         } catch (err) {
@@ -1239,12 +1239,12 @@ export let plugin;
      */
     async function moveSelectedFolder() {
         if (selectedFolders.size === 0) {
-            error = "Please select a folder to move";
+            error = t('errors.selectFolderToMove');
             return;
         }
 
         if (selectedFolders.size > 1) {
-            error = "Move operation can only select one folder";
+            error = t('errors.moveOnlyOneFolder');
             return;
         }
 
@@ -1271,7 +1271,7 @@ export let plugin;
 
     async function deleteSelectedFiles() {
         if (selectedFiles.size === 0) {
-            error = "Please select files to delete";
+            error = t('errors.selectFilesToDelete');
             return;
         }
 
@@ -1351,7 +1351,7 @@ export let plugin;
 
             const undoneData = await undoneResponse.json();
             if (undoneData.code !== 200) {
-                throw new Error(undoneData.message || 'Failed to get undone tasks');
+                throw new Error(undoneData.message || t('errors.failedToGetUndoneTasks'));
             }
 
             // 获取已完成的离线下载任务（包括失败的）
@@ -1375,7 +1375,7 @@ export let plugin;
             tasks = [...(undoneData.data || []), ...doneTasks];
         } catch (err) {
             console.error("Load tasks failed:", err);
-            error = `Failed to load tasks: ${err.message || t('errors.unknownError')}`;
+            error = `${t('messages.failedToLoadTasks')}: ${err.message || t('errors.unknownError')}`;
         } finally {
             isLoadingTasks = false;
         }
@@ -1386,7 +1386,7 @@ export let plugin;
      */
     async function startOfflineDownload() {
         if (!downloadUrls.trim()) {
-            error = "Please enter download links";
+            error = t('errors.enterDownloadLinks');
             return;
         }
 
@@ -1413,12 +1413,12 @@ export let plugin;
                 });
 
                 if (!response.ok) {
-                    throw new Error(`Failed to add offline download: ${response.status} ${response.statusText}`);
-                }
+                throw new Error(`${t('messages.failedToAddOfflineDownload')}: ${response.status} ${response.statusText}`);
+            }
 
                 const result = await response.json();
                 if (result.code !== 200) {
-                    throw new Error(result.message || 'Failed to add offline download');
+                    throw new Error(result.message || t('errors.failedToAddOfflineDownload'));
                 }
             }
 
@@ -1428,7 +1428,7 @@ export let plugin;
             
         } catch (err) {
             console.error("Offline download failed:", err);
-            error = `Offline download failed: ${err.message || 'Unknown error'}`;
+            error = `${t('errors.offlineDownloadFailed')}: ${err.message || t('errors.unknownError')}`;
         } finally {
             isOfflineDownloading = false;
         }
@@ -1445,7 +1445,7 @@ export let plugin;
      * @returns {string} 格式化后的任务名称
      */
     function formatTaskName(name) {
-        if (!name) return 'Unknown task';
+        if (!name) return t('errors.unknownTask');
         
         // 移除"download "前缀
         let cleanName = name.replace(/^download\s+/, '');
@@ -1534,7 +1534,7 @@ export let plugin;
 
             const result = await response.json();
             if (result.code !== 200) {
-                throw new Error(result.message || 'Failed to clear succeeded tasks');
+                throw new Error(result.message || t('errors.failedToClearSucceededTasks'));
             }
 
             // 显示成功提示
@@ -1545,7 +1545,7 @@ export let plugin;
             
         } catch (err) {
             console.error("Clear succeeded tasks error:", err);
-            error = `Failed to clear succeeded tasks: ${err.message || t('errors.unknownError')}`;
+            error = `${t('messages.failedToClearSucceededTasks')}: ${err.message || t('errors.unknownError')}`;
         } finally {
             isLoading = false;
         }
@@ -1589,7 +1589,7 @@ export let plugin;
 
             const result = await response.json();
             if (result.code !== 200) {
-                throw new Error(result.message || 'Failed to retry selected tasks');
+                throw new Error(result.message || t('errors.failedToRetrySelectedTasks'));
             }
 
             // 显示成功提示
@@ -1604,7 +1604,7 @@ export let plugin;
             
         } catch (err) {
             console.error("Retry selected tasks error:", err);
-            error = `Failed to retry selected tasks: ${err.message || t('errors.unknownError')}`;
+            error = `${t('messages.failedToRetrySelectedTasks')}: ${err.message || t('errors.unknownError')}`;
         } finally {
             isLoading = false;
         }
@@ -1640,7 +1640,7 @@ export let plugin;
 
             const result = await response.json();
             if (result.code !== 200) {
-                throw new Error(result.message || 'Failed to clear done tasks');
+                throw new Error(result.message || t('errors.failedToClearDoneTasks'));
             }
 
             // 显示成功提示
@@ -1651,7 +1651,7 @@ export let plugin;
             
         } catch (err) {
             console.error("Clear done tasks error:", err);
-            error = `Failed to clear done tasks: ${err.message || t('errors.unknownError')}`;
+            error = `${t('messages.failedToClearDoneTasks')}: ${err.message || t('errors.unknownError')}`;
         } finally {
             isLoading = false;
         }
@@ -1686,7 +1686,7 @@ export let plugin;
 
             const result = await response.json();
             if (result.code !== 200) {
-                throw new Error(result.message || 'Failed to retry failed tasks');
+                throw new Error(result.message || t('errors.failedToRetryFailedTasks'));
             }
 
             // 显示成功提示
@@ -1697,7 +1697,7 @@ export let plugin;
             
         } catch (err) {
             console.error("Retry failed tasks error:", err);
-            error = `Failed to retry failed tasks: ${err.message || t('errors.unknownError')}`;
+            error = `${t('messages.failedToRetryFailedTasks')}: ${err.message || t('errors.unknownError')}`;
         } finally {
             isLoading = false;
         }
@@ -1711,21 +1711,21 @@ export let plugin;
     <div class="alist-header">
         <div class="alist-path">
             <button class="b3-button b3-button--small" on:click={goBack} disabled={currentPath === "/" || isLoading}>
-                ⬅️ Back
+                ⬅️ {t('back')}
             </button>
             <span class="alist-current-path">{currentPath}</span>
         </div>
         <div class="alist-actions">
             {#if !isLoggedIn}
                 <button class="b3-button b3-button--small" on:click={loginAndLoadFiles} disabled={isLoading}>
-                    🔑 Login
+                    🔑 {t('login')}
                 </button>
             {:else}
                 <button class="b3-button b3-button--small" on:click={showFunctionGroupDialog} disabled={isLoading}>
-                    ⚙️ Functions
+                    ⚙️ {t('functions')}
                 </button>
                 <button class="b3-button b3-button--small" on:click={refreshFileList} disabled={isLoading}>
-                    🔄 Refresh
+                    🔄 {t('refresh')}
                 </button>
             {/if}
         </div>
@@ -1737,12 +1737,12 @@ export let plugin;
             <div class="alist-loading">
                 <div class="loading-spinner"></div>
                 <div class="loading-text">
-                    <span class="loading-title">Loading...</span>
+                    <span class="loading-title">{t('loading')}</span>
                     <span class="loading-subtitle">
                         {#if !isLoggedIn}
-                            Connecting to AList server
+                            {t('connectingToServer')}
                         {:else}
-                            Getting file list
+                            {t('gettingFileList')}
                         {/if}
                     </span>
                 </div>
@@ -1752,22 +1752,22 @@ export let plugin;
                 <div class="error-icon">⚠️</div>
                 <div class="error-message">{error}</div>
                 <button class="b3-button b3-button--small" on:click={loginAndLoadFiles}>
-                    Retry
+                    {t('retry')}
                 </button>
             </div>
         {:else if !isLoggedIn}
             <div class="alist-welcome">
                 <div class="welcome-icon">📁</div>
-                <h3>AList File Browser</h3>
-                <p>Please configure AList server information in settings first, then click the login button.</p>
+                <h3>{t('alistFileBrowser')}</h3>
+                <p>{t('errors.configRequired')}</p>
                 <button class="b3-button" on:click={loginAndLoadFiles}>
-                    🔑 Login Now
+                    🔑 {t('loginNow')}
                 </button>
             </div>
         {:else if files.length === 0}
             <div class="alist-empty">
                 <div class="empty-icon">📂</div>
-                <p>This directory is empty</p>
+                <p>{t('directoryEmpty')}</p>
             </div>
         {:else}
             <div class="alist-file-list">
@@ -1803,7 +1803,7 @@ export let plugin;
                                     on:click={() => showFilePreview(file)}
                                     title="Preview file"
                                 >
-                                    👁️ Preview
+                                    👁️ {t('preview')}
                                 </button>
                                 <button 
                                     class="b3-button b3-button--small download-btn"
@@ -1811,7 +1811,7 @@ export let plugin;
                                     title="Download file"
                                     style="margin-left: 4px;"
                                 >
-                                    📥 Download
+                                    📥 {t('download')}
                                 </button>
                                 <button 
                                     class="b3-button b3-button--small embed-link-btn"
@@ -1819,7 +1819,7 @@ export let plugin;
                                     title="Embed to note"
                                     style="margin-left: 4px;"
                                 >
-                                    📝 Embed here
+                                    📝 {t('embedHere')}
                                 </button>
                             </div>
                         {/if}
@@ -1834,7 +1834,7 @@ export let plugin;
         <div class="upload-overlay" on:click={closeUploadDialog}>
             <div class="upload-dialog" on:click|stopPropagation>
                 <div class="upload-header">
-                    <h3>📤 Upload files to {currentPath}</h3>
+                    <h3>📤 {t('upload.title', { path: currentPath })}</h3>
                     <button class="close-btn" on:click={closeUploadDialog}>✕</button>
                 </div>
                 
@@ -1856,21 +1856,21 @@ export let plugin;
                             on:change={handleFolderSelect}
                         />
                         
-                        <h4>Drag files here to upload, or click:</h4>
+                        <h4>{t('upload.dragHint')}</h4>
                         
                         <!-- 文件选择按钮 -->
                         <div class="upload-buttons">
                             <button 
                                 class="upload-btn folder-btn" 
                                 on:click={() => document.getElementById('folder-input').click()}
-                                title="Select folder"
+                                title={t('upload.selectFolder')}
                             >
                                 📁
                             </button>
                             <button 
                                 class="upload-btn file-btn" 
                                 on:click={() => document.getElementById('file-input').click()}
-                                title="Select files"
+                                title={t('upload.selectFiles')}
                             >
                                 📄
                             </button>
@@ -1880,10 +1880,10 @@ export let plugin;
                         <div class="upload-config-row">
                             <!-- 上传模式选择 -->
                             <div class="upload-mode">
-                                <label for="upload-mode-select">Mode:</label>
+                                <label for="upload-mode-select">{t('upload.mode')}:</label>
                                 <select id="upload-mode-select" bind:value={uploadMode} class="b3-select">
-                                    <option value="stream">Stream</option>
-                                    <option value="form">Form</option>
+                                    <option value="stream">{t('upload.streamMode')}</option>
+                                    <option value="form">{t('upload.formMode')}</option>
                                 </select>
                             </div>
                             
@@ -1891,15 +1891,15 @@ export let plugin;
                             <div class="upload-options">
                                 <label class="upload-checkbox">
                                     <input type="checkbox" bind:checked={addAsTask} />
-                                    <span>Add as task</span>
+                                    <span>{t('upload.addAsTask')}</span>
                                 </label>
                                 <label class="upload-checkbox">
                                     <input type="checkbox" bind:checked={overwriteExisting} />
-                                    <span>Overwrite existing files</span>
+                                    <span>{t('upload.overwriteExisting')}</span>
                                 </label>
                                 <label class="upload-checkbox">
                                     <input type="checkbox" bind:checked={tryInstantUpload} />
-                                    <span>Try instant upload</span>
+                                    <span>{t('upload.tryInstant')}</span>
                                 </label>
                             </div>
                         </div>
@@ -1908,7 +1908,7 @@ export let plugin;
                     <!-- 选中的文件列表 -->
                     {#if uploadFiles.length > 0}
                         <div class="selected-files">
-                            <h4>Selected files ({uploadFiles.length}):</h4>
+                            <h4>{t('upload.selectedFiles', { count: uploadFiles.length })}:</h4>
                             <div class="file-list">
                                 {#each uploadFiles as file, index}
                                     <div class="selected-file">
@@ -1939,7 +1939,7 @@ export let plugin;
                 
                 <div class="upload-footer">
                     <button class="b3-button" on:click={closeUploadDialog} disabled={isUploading}>
-                        Cancel
+                        {t('upload.cancel')}
                     </button>
                     <button 
                         class="b3-button b3-button--primary" 
@@ -1947,9 +1947,9 @@ export let plugin;
                         disabled={uploadFiles.length === 0 || isUploading}
                     >
                         {#if isUploading}
-                            Uploading...
+                            {t('upload.uploading')}
                         {:else}
-                            Start Upload
+                            {t('upload.startUpload')}
                         {/if}
                     </button>
                 </div>
@@ -1962,7 +1962,7 @@ export let plugin;
         <div class="function-overlay" on:click={closeFunctionGroupDialog}>
             <div class="function-dialog" on:click|stopPropagation>
                 <div class="function-header">
-                    <h3>⚙️ Function Group</h3>
+                    <h3>⚙️ {t('functionGroup.title')}</h3>
                     <button class="close-btn" on:click={closeFunctionGroupDialog}>✕</button>
                 </div>
                 
@@ -1972,28 +1972,28 @@ export let plugin;
                         class:active={activeTab === "folder"}
                         on:click={() => switchTab("folder")}
                     >
-                        📁 Folder Management
+                        {t('functionGroup.folderManagement')}
                     </button>
                     <button 
                         class="tab-btn" 
                         class:active={activeTab === "file"}
                         on:click={() => switchTab("file")}
                     >
-                        File Management
+                        {t('functionGroup.fileManagement')}
                     </button>
                     <button 
                         class="tab-btn" 
                         class:active={activeTab === "upload"}
                         on:click={() => switchTab("upload")}
                     >
-                        📤 Upload Files
+                        {t('functionGroup.uploadFiles')}
                     </button>
                     <button 
                         class="tab-btn" 
                         class:active={activeTab === "task"}
                         on:click={() => switchTab("task")}
                     >
-                        📋 Task List
+                        {t('functionGroup.taskList')}
                     </button>
                 </div>
                 
@@ -2002,12 +2002,12 @@ export let plugin;
                         <div class="folder-management">
                             <!-- 新建文件夹 -->
                             <div class="function-section">
-                                <h4>📁 Create New Folder</h4>
+                                <h4>{t('functionGroup.createNewFolder')}</h4>
                                 <div class="input-group">
                                     <input 
                                         type="text" 
                                         bind:value={newFolderName}
-                                        placeholder="Enter folder name"
+                                        placeholder={t('functionGroup.enterFolderName')}
                                         class="b3-text-field"
                                         disabled={isCreatingFolder}
                                         on:keydown={(e) => e.key === 'Enter' && createFolder()}
@@ -2018,9 +2018,9 @@ export let plugin;
                                         disabled={isCreatingFolder || !newFolderName.trim()}
                                     >
                                         {#if isCreatingFolder}
-                                            Creating...
+                                            {t('functionGroup.creating')}
                                         {:else}
-                                            Create
+                                            {t('functionGroup.create')}
                                         {/if}
                                     </button>
                                 </div>
@@ -2028,12 +2028,12 @@ export let plugin;
                             
                             <!-- 删除文件夹 -->
                             <div class="function-section">
-                                <h4>🗑️ Delete Folder</h4>
-                                <p class="section-desc">Select folders to delete, then click the delete button</p>
+                                <h4>{t('functionGroup.deleteFolder')}</h4>
+                                <p class="section-desc">{t('functionGroup.selectFoldersToDelete')}</p>
                                 
                                 <div class="folder-selection">
                                     {#if files.filter(f => f.is_dir).length === 0}
-                                        <p class="no-folders">No folders in current directory</p>
+                                        <p class="no-folders">{t('functionGroup.noFoldersInDirectory')}</p>
                                     {:else}
                                         <div class="folder-list">
                                             {#each files.filter(f => f.is_dir) as folder}
@@ -2050,7 +2050,7 @@ export let plugin;
                                         
                                         {#if selectedFolders.size > 0}
                                             <div class="delete-actions">
-                                                <p class="selected-count">Selected {selectedFolders.size} folders</p>
+                                                <p class="selected-count">{t('functionGroup.selectedFolders', {count: selectedFolders.size})}</p>
                                                 <div class="folder-action-buttons">
                                                     <button 
                                                         class="b3-button b3-button--danger"
@@ -2059,9 +2059,9 @@ export let plugin;
                                                         style="margin-right: 8px;"
                                                     >
                                                         {#if isDeletingFolders}
-                                                            Deleting...
+                                                            {t('functionGroup.deleting')}
                                                         {:else}
-                                                            🗑️ Delete Selected Folders
+                                                            {t('functionGroup.deleteSelectedFolders')}
                                                         {/if}
                                                     </button>
                                                     <button 
@@ -2069,9 +2069,9 @@ export let plugin;
                                                         on:click={moveSelectedFolder}
                                                         disabled={isDeletingFolders || selectedFolders.size !== 1}
                                                         style="background-color: #FF9800; color: white;"
-                                                        title={selectedFolders.size > 1 ? "Move operation can only select one folder" : "Move selected folder"}
+                                                        title={selectedFolders.size > 1 ? t('functionGroup.moveOperationSingleFolder') : t('functionGroup.moveSelectedFolder')}
                                                     >
-                                                        📁 Move
+                                                        {t('functionGroup.move')}
                                                     </button>
                                                 </div>
                                             </div>
@@ -2086,7 +2086,7 @@ export let plugin;
                                 
                                 <div class="file-selection">
                                     {#if files.filter(f => !f.is_dir).length === 0}
-                                        <p class="no-files">No files in current directory</p>
+                                        <p class="no-files">{t('functionGroup.noFilesInDirectory')}</p>
                                     {:else}
                                         <div class="file-list">
                                             {#each files.filter(f => !f.is_dir) as file}
@@ -2105,7 +2105,7 @@ export let plugin;
                                         
                                         {#if selectedFiles.size > 0}
                                             <div class="delete-actions">
-                                                <p class="selected-count">Selected {selectedFiles.size} files</p>
+                                                <p class="selected-count">{t('functionGroup.selectedFiles', {count: selectedFiles.size})}</p>
                                                 <div class="file-action-buttons">
                                                     <button 
                                                         class="b3-button"
@@ -2114,9 +2114,9 @@ export let plugin;
                                                         style="background-color: #f44336; color: white; margin-right: 8px;"
                                                     >
                                                         {#if isDeletingFiles}
-                                                            Deleting...
+                                                            {t('functionGroup.deleting')}
                                                         {:else}
-                                                            Delete Selected
+                                                            {t('functionGroup.deleteSelected')}
                                                         {/if}
                                                     </button>
                                                     <button 
@@ -2124,18 +2124,18 @@ export let plugin;
                                                         on:click={renameSelectedFile}
                                                         disabled={isDeletingFiles || selectedFiles.size !== 1}
                                                         style="background-color: #2196F3; color: white; margin-right: 8px;"
-                                                        title={selectedFiles.size > 1 ? "Rename operation can only select one file" : "Rename selected file"}
+                                                        title={selectedFiles.size > 1 ? t('functionGroup.renameOperationSingleFile') : t('functionGroup.renameSelectedFile')}
                                                     >
-                                                        Rename
+                                                        {t('functionGroup.rename')}
                                                     </button>
                                                     <button 
                                                         class="b3-button"
                                                         on:click={moveSelectedItem}
                                                         disabled={isDeletingFiles || selectedFiles.size !== 1}
                                                         style="background-color: #FF9800; color: white;"
-                                                        title={selectedFiles.size > 1 ? "Move operation can only select one file" : "Move selected file"}
+                                                        title={selectedFiles.size > 1 ? t('functionGroup.moveOperationSingleFile') : t('functionGroup.moveSelectedFile')}
                                                     >
-                                                        📁 Move
+                                                        {t('functionGroup.move')}
                                                     </button>
                                                 </div>
                                             </div>
@@ -2153,21 +2153,21 @@ export let plugin;
                                     class:active={uploadTab === "online"}
                                     on:click={() => uploadTab = "online"}
                                 >
-                                    🌐 Online Upload
+                                    🌐 {t('functionGroup.onlineUpload')}
                                 </button>
                                 <button 
                                     class="upload-method-tab" 
                                     class:active={uploadTab === "offline"}
                                     on:click={() => uploadTab = "offline"}
                                 >
-                                    📥 Offline Download
+                                    📥 {t('functionGroup.offlineDownload')}
                                 </button>
                             </div>
                             
                             {#if uploadTab === "online"}
                                 <!-- 在线上传区域 -->
                                 <div class="function-section">
-                                    <h4>📤 Online upload files to {currentPath}</h4>
+                                    <h4>📤 {t('functionGroup.onlineUploadTo', {path: currentPath})}</h4>
                                 <div class="upload-drop-zone">
                                     <input 
                                         type="file" 
@@ -2184,21 +2184,21 @@ export let plugin;
                                         on:change={handleFolderSelect}
                                     />
                                     
-                                    <h5>Drag files here to upload, or click:</h5>
+                                    <h5>{t('functionGroup.dragFilesHere')}</h5>
                                     
                                     <!-- 文件选择按钮 -->
                                     <div class="upload-buttons">
                                         <button 
                                             class="upload-btn folder-btn" 
                                             on:click={() => document.getElementById('function-folder-input').click()}
-                                            title="Select folder"
+                                            title={t('functionGroup.selectFolder')}
                                         >
                                             📁
                                         </button>
                                         <button 
                                             class="upload-btn file-btn" 
                                             on:click={() => document.getElementById('function-file-input').click()}
-                                            title="Select files"
+                                            title={t('functionGroup.selectFiles')}
                                         >
                                             📄
                                         </button>
@@ -2208,10 +2208,10 @@ export let plugin;
                                     <div class="upload-config-row">
                                         <!-- 上传模式选择 -->
                                         <div class="upload-mode">
-                                            <label for="function-upload-mode-select">Mode:</label>
+                                            <label for="function-upload-mode-select">{t('functionGroup.mode')}:</label>
                                             <select id="function-upload-mode-select" bind:value={uploadMode} class="b3-select">
-                                                <option value="stream">Stream</option>
-                                                <option value="form">Form</option>
+                                                <option value="stream">{t('functionGroup.stream')}</option>
+                                                <option value="form">{t('functionGroup.form')}</option>
                                             </select>
                                         </div>
                                         
@@ -2219,15 +2219,15 @@ export let plugin;
                                         <div class="upload-options">
                                             <label class="upload-checkbox">
                                                 <input type="checkbox" bind:checked={addAsTask} />
-                                                <span>Add as task</span>
+                                                <span>{t('functionGroup.addAsTask')}</span>
                                             </label>
                                             <label class="upload-checkbox">
                                                 <input type="checkbox" bind:checked={overwriteExisting} />
-                                                <span>Overwrite existing files</span>
+                                                <span>{t('functionGroup.overwriteExistingFiles')}</span>
                                             </label>
                                             <label class="upload-checkbox">
                                                 <input type="checkbox" bind:checked={tryInstantUpload} />
-                                                <span>Try instant upload</span>
+                                                <span>{t('functionGroup.tryInstantUpload')}</span>
                                             </label>
                                         </div>
                                     </div>
@@ -2236,7 +2236,7 @@ export let plugin;
                                 <!-- 选中的文件列表 -->
                                 {#if uploadFiles.length > 0}
                                     <div class="selected-files">
-                                        <h5>Selected files ({uploadFiles.length}):</h5>
+                                        <h5>{t('functionGroup.selectedFilesCount', {count: uploadFiles.length})}:</h5>
                                         <div class="file-list">
                                             {#each uploadFiles as file, index}
                                                 <div class="selected-file">
@@ -2267,9 +2267,9 @@ export let plugin;
                                         disabled={uploadFiles.length === 0 || isUploading}
                                     >
                                         {#if isUploading}
-                                            Uploading...
+                                            {t('functionGroup.uploading')}
                                         {:else}
-                                            Start Upload
+                                            {t('functionGroup.startUpload')}
                                         {/if}
                                     </button>
                                 </div>
@@ -2277,16 +2277,16 @@ export let plugin;
                             {:else if uploadTab === "offline"}
                                 <!-- 离线下载区域 -->
                                 <div class="function-section">
-                                    <h4>📥 Offline download to {currentPath}</h4>
-                                    <p class="section-desc">Enter download links, AList will automatically download files in the background</p>
+                                    <h4>📥 {t('functionGroup.offlineDownloadTo', {path: currentPath})}</h4>
+                                    <p class="section-desc">{t('functionGroup.offlineDownloadDesc')}</p>
                                     
                                     <div class="offline-download-area">
                                         <div class="download-input-group">
-                                            <label for="download-urls">Download links (one per line):</label>
+                                            <label for="download-urls">{t('functionGroup.downloadLinksLabel')}:</label>
                                             <textarea 
                                                 id="download-urls"
                                                 bind:value={downloadUrls}
-                                                placeholder="Please enter download links, one per line\nExample:\nhttps://example.com/file1.zip\nhttps://example.com/file2.pdf"
+                                                placeholder={t('functionGroup.downloadLinksPlaceholder')}
                                                 class="b3-text-field download-textarea"
                                                 rows="6"
                                                 disabled={isOfflineDownloading}
@@ -2300,20 +2300,20 @@ export let plugin;
                                                 disabled={!downloadUrls.trim() || isOfflineDownloading}
                                             >
                                                 {#if isOfflineDownloading}
-                                                    Adding...
+                                                    {t('functionGroup.adding')}
                                                 {:else}
-                                                    📥 Start Offline Download
+                                                    📥 {t('functionGroup.startOfflineDownload')}
                                                 {/if}
                                             </button>
                                         </div>
                                         
                                         <div class="download-tips">
-                                            <h5>💡 Usage Tips:</h5>
+                                            <h5>💡 {t('functionGroup.usageTips')}:</h5>
                                             <ul>
-                                                <li>Supports HTTP/HTTPS direct link downloads</li>
-                                                <li>Enter one download link per line</li>
-                                                <li>Download tasks will run in the background</li>
-                                                <li>View download progress in the task list</li>
+                                                <li>{t('functionGroup.tip1')}</li>
+                                                <li>{t('functionGroup.tip2')}</li>
+                                                <li>{t('functionGroup.tip3')}</li>
+                                                <li>{t('functionGroup.tip4')}</li>
                                             </ul>
                                         </div>
                                     </div>
@@ -2326,27 +2326,27 @@ export let plugin;
                             <div class="function-section">
                                 <div class="task-header">
                                     <div class="task-title">
-                                        <h4>📋 Task List</h4>
-                                        <p class="section-desc">View and manage unfinished tasks</p>
+                                        <h4>📋 {t('functionGroup.taskList')}</h4>
+                                        <p class="section-desc">{t('functionGroup.taskListDesc')}</p>
                                     </div>
                                     <div class="task-actions">
                                         <button 
                                             class="b3-button task-retry-selected-btn" 
                                             on:click={retrySelectedTasks}
                                             disabled={isLoadingTasks || isLoading || selectedTasks.size === 0}
-                                            title="Retry selected offline download tasks ({selectedTasks.size} tasks)"
+                                            title={t('functionGroup.retrySelectedTasksTitle', {count: selectedTasks.size})}
                                             style="background-color: #4CAF50; color: white;"
                                         >
-                                            Retry Selected
+                                            {t('functionGroup.retrySelected')}
                                         </button>
                                         <button 
                                             class="b3-button task-retry-btn" 
                                             on:click={retryFailedTasks}
                                             disabled={isLoadingTasks || isLoading}
-                                            title="Retry all failed offline download tasks"
+                                            title={t('functionGroup.retryFailedTasksTitle')}
                                             style="background-color: #FF9800; color: white;"
                                         >
-                                            Retry Failed
+                                            {t('functionGroup.retryFailed')}
                                         </button>
                                         <button 
                                             class="b3-button task-clear-btn" 
@@ -2355,7 +2355,7 @@ export let plugin;
                                             title="Clear all successful offline download tasks"
                                             style="background-color: #2196F3; color: white;"
                                         >
-                                            Clear Success
+                                            {t('functionGroup.clearSuccessful')}
                                         </button>
                                         <button 
                                             class="b3-button task-clear-done-btn" 
@@ -2364,7 +2364,7 @@ export let plugin;
                                             title="Clear all completed offline download tasks"
                                             style="background-color: #9C27B0; color: white;"
                                         >
-                                            Clear
+                                            {t('functionGroup.clearCompleted')}
                                         </button>
                                         <button 
                                             class="b3-button b3-button--primary task-refresh-btn" 
@@ -2372,9 +2372,9 @@ export let plugin;
                                             disabled={isLoadingTasks}
                                         >
                                             {#if isLoadingTasks}
-                                                Refreshing...
+                                                {t('functionGroup.refreshing')}
                                             {:else}
-                                                Refresh
+                                                {t('refresh')}
                                             {/if}
                                         </button>
                                     </div>
@@ -2384,12 +2384,12 @@ export let plugin;
                                     {#if isLoadingTasks}
                                         <div class="task-loading">
                                             <div class="loading-spinner"></div>
-                                            <p>Loading task list...</p>
+                                            <p>{t('functionGroup.loadingTaskList')}</p>
                                         </div>
                                     {:else if tasks.length === 0}
                                         <div class="task-empty">
                                             <div class="empty-icon">✅</div>
-                                            <p>No unfinished tasks</p>
+                                            <p>{t('functionGroup.noTasks')}</p>
                                         </div>
                                     {:else}
                                         <div class="task-table-container">
@@ -2403,9 +2403,9 @@ export let plugin;
                                                                 on:change={toggleAllTasks}
                                                             />
                                                         </th>
-                                                        <th class="task-status-col">Status</th>
-                                                        <th class="task-creator-col">Creator</th>
-                                                        <th class="task-name-col">Name</th>
+                                                        <th class="task-status-col">{t('functionGroup.status')}</th>
+                                        <th class="task-creator-col">{t('functionGroup.creator')}</th>
+                                        <th class="task-name-col">{t('functionGroup.name')}</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -2433,7 +2433,7 @@ export let plugin;
                                                                 <span class="task-creator">{task.creator || 'admin'}</span>
                                                             </td>
                                                             <td class="task-name-col">
-                                                <span class="task-name-text" title="{task.name || 'Unknown task'}">
+                                                <span class="task-name-text" title="{task.name || t('errors.unknownTask')}">
                                                     {formatTaskName(task.name)}
                                                 </span>
                                             </td>
@@ -2456,7 +2456,7 @@ export let plugin;
                 
                 <div class="function-footer">
                     <button class="b3-button" on:click={closeFunctionGroupDialog}>
-                        Close
+                        {t('close')}
                     </button>
                 </div>
             </div>
@@ -2468,7 +2468,7 @@ export let plugin;
         <div class="preview-overlay" on:click={closePreview}>
             <div class="preview-dialog" on:click|stopPropagation>
                 <div class="preview-header">
-                    <h3>👁️ Preview: {previewFile?.name}</h3>
+                    <h3>👁️ {t('preview')}: {previewFile?.name}</h3>
                     <button class="close-btn" on:click={closePreview}>✕</button>
                 </div>
                 
@@ -2476,7 +2476,7 @@ export let plugin;
                     {#if isLoadingPreview}
                         <div class="preview-loading">
                             <div class="loading-spinner"></div>
-                            <span>Loading preview...</span>
+                            <span>{t('functionGroup.loadingPreview')}</span>
                         </div>
                     {:else}
                         <div class="preview-content">
@@ -2487,7 +2487,7 @@ export let plugin;
                 
                 <div class="preview-footer">
                     <button class="b3-button" on:click={closePreview}>
-                        Close
+                        {t('close')}
                     </button>
                 </div>
             </div>
@@ -2499,7 +2499,7 @@ export let plugin;
         <div class="preview-overlay" on:click={closeMoveDialog}>
             <div class="preview-dialog" on:click|stopPropagation style="max-width: 600px; max-height: 80vh;">
                 <div class="preview-header">
-                    <h3>📁 Move file/folder: {moveItem}</h3>
+                    <h3>📁 {t('functionGroup.moveFileFolder', {item: moveItem})}</h3>
                     <button class="close-btn" on:click={closeMoveDialog}>✕</button>
                 </div>
                 
@@ -2507,12 +2507,12 @@ export let plugin;
                     {#if isLoadingFolderTree}
                         <div class="preview-loading">
                             <div class="loading-spinner"></div>
-                            <span>Loading folder tree...</span>
+                            <span>{t('functionGroup.loadingFolderTree')}</span>
                         </div>
                     {:else}
                         <div class="move-content">
                             <div class="move-section">
-                                <h4>Select target folder:</h4>
+                                <h4>{t('functionGroup.selectTargetFolder')}:</h4>
                                 <div class="folder-tree">
                                     <!-- 根目录选项 -->
                                     <div class="folder-item root-folder" 
@@ -2561,7 +2561,7 @@ export let plugin;
                                         type="checkbox" 
                                         bind:checked={allowOverwrite}
                                     />
-                                    <span>Allow overwrite</span>
+                                    <span>{t('functionGroup.allowOverwrite')}</span>
                                 </label>
                             </div>
                             
@@ -2574,7 +2574,7 @@ export let plugin;
                 
                 <div class="preview-footer">
                     <button class="b3-button" on:click={closeMoveDialog}>
-                        Cancel
+                        {t('cancel')}
                     </button>
                     <button 
                         class="b3-button b3-button--primary" 
@@ -2582,9 +2582,9 @@ export let plugin;
                         disabled={isMoving || !moveTargetPath || isLoadingFolderTree}
                     >
                         {#if isMoving}
-                            Moving...
-                        {:else}
-                            Confirm Move
+                            {t('functionGroup.moving')}
+                                    {:else}
+                                        {t('functionGroup.confirmMove')}
                         {/if}
                     </button>
                 </div>
@@ -3813,9 +3813,7 @@ export let plugin;
         border-bottom: none;
     }
 
-    .task-checkbox {
-        cursor: pointer;
-    }
+    
 
     .task-status-icon {
         font-size: 16px;

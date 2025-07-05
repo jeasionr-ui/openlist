@@ -1,19 +1,9 @@
 import {
     Plugin,
     showMessage,
-    confirm,
-    Dialog,
-    Menu,
-    adaptHotkey,
     getFrontend,
     getBackend,
-    IModel,
     Protyle,
-    openWindow,
-    IOperation,
-    Constants,
-    openMobileFileById,
-    lockScreen,
     ICard,
     ICardData
 } from "siyuan";
@@ -22,7 +12,7 @@ import "@/index.scss";
 import AListBrowser from "@/hello.svelte";
 
 import { SettingUtils } from "./libs/setting-utils";
-import { svelteDialog, simpleDialog } from "./libs/dialog";
+import { simpleDialog } from "./libs/dialog";
 
 const STORAGE_NAME = "alist-config";
 const DOCK_TYPE = "dock_tab";
@@ -129,9 +119,13 @@ export default class PluginSample extends Plugin {
             title: this.i18n.settings.password,
             description: this.i18n.settings.passwordDesc,
             action: {
-                callback: () => {
-                    let value = this.settingUtils.takeAndSave("password");
-                    console.log("Password updated");
+                callback: async () => {
+                    const value = await this.settingUtils.takeAndSave("password");
+                    if (value) {
+                        console.log("Password updated:", value.length > 0 ? "[HIDDEN]" : "[EMPTY]");
+                    } else {
+                        console.log("Password update failed");
+                    }
                 }
             }
         });
@@ -144,8 +138,12 @@ export default class PluginSample extends Plugin {
             placeholder: "/",
             action: {
                 callback: () => {
-                    let value = this.settingUtils.take("rootPath");
-                    console.log("Root path:", value);
+                    const value = this.settingUtils.take("rootPath");
+                    if (value !== null && value !== undefined) {
+                        console.log("Root path:", value);
+                    } else {
+                        console.log("Root path not set, using default");
+                    }
                 }
             }
         });
@@ -185,9 +183,13 @@ export default class PluginSample extends Plugin {
             title: this.i18n.settings.lastPath,
             description: this.i18n.settings.lastPathDesc,
             action: {
-                callback: () => {
-                    let value = this.settingUtils.takeAndSave("lastPath");
-                    console.log("Last path:", value);
+                callback: async () => {
+                    const value = await this.settingUtils.takeAndSave("lastPath");
+                    if (value) {
+                        console.log("Last path updated:", value);
+                    } else {
+                        console.log("Last path update failed or empty");
+                    }
                 }
             }
         });
@@ -372,8 +374,11 @@ Click link to preview file
 
     /**
      * 预览 AList 文件
+     * @param filePath 文件路径
+     * @param fileName 文件名称
+     * @returns Promise<void>
      */
-    private async previewAListFile(filePath: string, fileName: string) {
+    private async previewAListFile(filePath: string, fileName: string): Promise<void> {
         try {
             const serverUrl = this.settingUtils.get("serverUrl");
             let token = this.settingUtils.get("token");
@@ -429,7 +434,10 @@ Click link to preview file
             };
             
             // 打开预览对话框
-            this.showAListPreviewDialog(file, fileInfo.raw_url || `${serverUrl}/d${filePath}`);
+        const dialogResult = this.showAListPreviewDialog(file, fileInfo.raw_url || `${serverUrl}/d${filePath}`);
+        if (dialogResult) {
+            console.log('Preview dialog opened successfully for:', fileName);
+        }
         } catch (error) {
             console.error('Failed to preview AList file:', error);
             showMessage(`Preview failed: ${error.message}`, 3000, 'error');
@@ -662,29 +670,7 @@ Click link to preview file
         return options;
     }
 
-    /**
-     * 验证 token 有效性
-     */
-    private async validateToken(serverUrl: string, token: string): Promise<boolean> {
-        try {
-            const response = await fetch(`${serverUrl}/api/me`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': token
-                }
-            });
-            
-            if (!response.ok) {
-                return false;
-            }
-            
-            const result = await response.json();
-            return result.code === 200;
-        } catch (error) {
-            console.error('Token validation failed:', error);
-            return false;
-        }
-    }
+
 
     /**
      * 获取token数据
@@ -798,12 +784,12 @@ Click link to preview file
         const password = this.settingUtils.get("password");
 
         if (!serverUrl || !username || !password) {
-            showMessage("Please configure server URL, username and password first", 3000, "error");
+            showMessage(this.i18n.messages.configFirst, 3000, "error");
             return;
         }
 
         try {
-            showMessage("Testing connection...", 2000, "info");
+            showMessage(this.i18n.messages.testingConnection, 2000, "info");
             const response = await this.loginToAList(serverUrl, username, password);
             if (response && response.token) {
                 // 设置token过期时间（AList token通常有效期为24小时）
@@ -812,9 +798,9 @@ Click link to preview file
                 // 保存token数据到独立文件
                 await this.saveTokenData(response.token, expiryTime.toString());
                 
-                showMessage("Connection successful!", 3000, "info");
+                showMessage(this.i18n.messages.connectionSuccess, 3000, "info");
             } else {
-                showMessage("Connection failed: Invalid response", 3000, "error");
+                showMessage(this.i18n.messages.connectionFailed, 3000, "error");
             }
         } catch (error) {
             console.error("AList connection test failed:", error);
@@ -856,20 +842,7 @@ Click link to preview file
 
     // 移除块图标事件相关方法
 
-    private showDialog() {
-        svelteDialog({
-            title: "AList File Browser",
-            width: this.isMobile ? "92vw" : "720px",
-            constructor: (container: HTMLElement) => {
-                return new AListBrowser({
-                    target: container,
-                    props: {
-                        plugin: this,
-                    }
-                });
-            }
-        });
-    }
+
 
     // 移除 addMenu 方法，不再需要顶栏菜单
 }
