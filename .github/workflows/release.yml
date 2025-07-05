@@ -75,19 +75,44 @@ jobs:
           VERSION=${{ steps.extract_version.outputs.VERSION }}
           # Extract the section for this version from CHANGELOG.md
           if [ -f "CHANGELOG.md" ]; then
-            # Find the section for this version and extract until the next version or end of file
-            awk "/^## $VERSION/,/^## [0-9]/ { if (/^## [0-9]/ && !/^## $VERSION/) exit; if (!/^## $VERSION/) print }" CHANGELOG.md > release_notes.txt
-            # If no specific version found, try without 'v' prefix
+            # Try different version formats: [v1.0.0], [1.0.0], v1.0.0, 1.0.0
+            VERSION_NO_V=${{ steps.extract_version.outputs.VERSION_NUMBER }}
+            
+            # Try format: ## [v1.0.0]
+            awk "/^## \\[$VERSION\\]/,/^## \\[/ { if (/^## \\[/ && !/^## \\[$VERSION\\]/) exit; if (!/^## \\[$VERSION\\]/) print }" CHANGELOG.md > release_notes.txt
+            
+            # If not found, try format: ## [1.0.0]
             if [ ! -s release_notes.txt ]; then
-              VERSION_NO_V=${{ steps.extract_version.outputs.VERSION_NUMBER }}
+              awk "/^## \\[$VERSION_NO_V\\]/,/^## \\[/ { if (/^## \\[/ && !/^## \\[$VERSION_NO_V\\]/) exit; if (!/^## \\[$VERSION_NO_V\\]/) print }" CHANGELOG.md > release_notes.txt
+            fi
+            
+            # If not found, try format: ## v1.0.0
+            if [ ! -s release_notes.txt ]; then
+              awk "/^## $VERSION/,/^## [0-9v]/ { if (/^## [0-9v]/ && !/^## $VERSION/) exit; if (!/^## $VERSION/) print }" CHANGELOG.md > release_notes.txt
+            fi
+            
+            # If not found, try format: ## 1.0.0
+            if [ ! -s release_notes.txt ]; then
               awk "/^## $VERSION_NO_V/,/^## [0-9]/ { if (/^## [0-9]/ && !/^## $VERSION_NO_V/) exit; if (!/^## $VERSION_NO_V/) print }" CHANGELOG.md > release_notes.txt
             fi
             # If still empty, provide default content
             if [ ! -s release_notes.txt ]; then
-              echo "## 🚀 新版本发布\n\n本版本包含功能改进和问题修复。\n\n### 📋 完整更新日志\n\n请查看 [CHANGELOG.md](./CHANGELOG.md) 获取详细信息。" > release_notes.txt
+              cat > release_notes.txt << 'EOL'
+## 🚀 新版本发布
+
+本版本包含功能改进和问题修复。
+
+### 📋 完整更新日志
+
+请查看 [CHANGELOG.md](./CHANGELOG.md) 获取详细信息。
+EOL
             fi
           else
-            echo "## 🚀 新版本发布\n\n本版本包含功能改进和问题修复。" > release_notes.txt
+            cat > release_notes.txt << 'EOL'
+## 🚀 新版本发布
+
+本版本包含功能改进和问题修复。
+EOL
           fi
           echo "RELEASE_NOTES<<EOF" >> $GITHUB_OUTPUT
           cat release_notes.txt >> $GITHUB_OUTPUT
