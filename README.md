@@ -4,7 +4,7 @@
 > 🚀 将 AList(OpenList) 文件管理器无缝集成到思源笔记侧边栏的强大插件
 
 [![GitHub release](https://img.shields.io/github/v/release/jeasionr-ui/openlist)](https://github.com/jeasionr-ui/openlist/releases)
-[![License](https://img.shields.io/github/license/jeasionr-ui/openlist)](./LICENSE)
+[![License](https://img.shields.io/github/license/jeasionr-ui/openlist)](https://github.com/jeasionr-ui/openlist/blob/main/LICENSE)
 [![Downloads](https://img.shields.io/github/downloads/jeasionr-ui/openlist/total)](https://github.com/jeasionr-ui/openlist/releases)
 
 ## 📖 项目简介
