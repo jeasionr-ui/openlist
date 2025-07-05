@@ -2,7 +2,7 @@
   "name": "alist",
   "author": "joasionr-ui",
   "url": "jeasionr-ui/openlist",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "minAppVersion": "3.0.12",
   "backends": [
     "windows",
