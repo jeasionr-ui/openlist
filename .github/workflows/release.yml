@@ -56,9 +56,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      # Build for production, 这一步会生成一个 alist.zip
+      # Build for production, 这一步会生成一个 package.zip
       - name: Build for production
         run: pnpm build
+
+      # Rename alist.zip to package.zip for SiYuan marketplace
+      - name: Rename zip file
+        run: mv alist.zip package.zip
 
       # Extract version from tag
       - name: Extract version
@@ -124,7 +128,7 @@ jobs:
         with:
           allowUpdates: true
           artifactErrorsFailBuild: true
-          artifacts: "alist.zip"
+          artifacts: "package.zip"
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: false
           name: "AList 文件浏览器插件 ${{ steps.extract_version.outputs.VERSION }}"
