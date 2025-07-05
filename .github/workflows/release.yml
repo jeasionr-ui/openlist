@@ -5,6 +5,12 @@ on:
     tags:
       - "v*"
 
+# 添加必要的权限以创建 release
+permissions:
+  contents: write
+  packages: write
+  pull-requests: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
