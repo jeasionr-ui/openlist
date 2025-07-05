@@ -49,6 +49,17 @@ export let plugin;
     // 任务列表相关变量
     let tasks = [];
     let isLoadingTasks = false;
+    
+    // 移动功能相关变量
+    let showMoveDialog = false;
+    let moveTargetPath = "/";
+    let folderTree = [];
+    let expandedFolders = new Set(); // 记录展开的文件夹路径
+    let isLoadingFolderTree = false;
+    let isMoving = false;
+    let allowOverwrite = false;
+    let moveItem = null;
+    let loadingSubfolders = new Set(); // 记录正在加载子文件夹的路径 // 要移动的文件或文件夹信息
 
     onMount(async () => {
         await initializeAList();
@@ -345,8 +356,8 @@ export let plugin;
                 uploadProgress = Math.round(((i + 1) / uploadFiles.length) * 100);
             }
 
-            // 上传完成后刷新文件列表
-            await loadFiles(currentPath);
+            // 上传完成后刷新文件列表（强制刷新以确保新上传的文件显示）
+            await loadFiles(currentPath, true);
             
             // 显示成功提示和刷新提醒
             await pushMsg(`成功上传 ${uploadFiles.length} 个文件！由于 AList 后台传输特性，如果文件未立即显示，请点击刷新按钮。`);
@@ -735,8 +746,8 @@ export let plugin;
                 throw new Error(result.message || '创建文件夹失败');
             }
             
-            // 刷新文件列表
-            await loadFiles(currentPath);
+            // 刷新文件列表（强制刷新以确保删除的文件不再显示）
+            await loadFiles(currentPath, true);
             
             // 显示成功提示
             await pushMsg(`文件夹 "${newFolderName}" 创建成功！`);
@@ -806,8 +817,8 @@ export let plugin;
                 }
             }
             
-            // 刷新文件列表
-            await loadFiles(currentPath);
+            // 刷新文件列表（强制刷新以确保删除的文件夹不再显示）
+            await loadFiles(currentPath, true);
             
             // 显示成功提示
             await pushMsg(`成功删除 ${selectedFolders.size} 个文件夹！`);
@@ -898,12 +909,11 @@ export let plugin;
                          throw new Error(result.message || '重命名文件失败');
                      }
                      
-                     // 刷新文件列表
-                     await loadFiles(currentPath);
-                     
                      // 显示成功提示
                      await pushMsg(`文件重命名成功: ${fileName} → ${newFileName.trim()}`);
-                     selectedFiles.clear();
+                     
+                     // 使用新的刷新函数，确保完全重新渲染
+                     await refreshFileList();
                     
                 } catch (err) {
                     console.error("Rename file failed:", err);
@@ -916,6 +926,314 @@ export let plugin;
                 // 用户取消操作
             }
         });
+    }
+
+    /**
+     * 移动选中的文件或文件夹
+     */
+    async function moveSelectedItem() {
+        if (selectedFiles.size === 0) {
+            error = "请选择要移动的文件或文件夹";
+            return;
+        }
+
+        if (selectedFiles.size > 1) {
+            error = "移动操作只能选择一个文件或文件夹";
+            return;
+        }
+
+        const itemName = Array.from(selectedFiles)[0];
+        moveItem = itemName;
+        
+        // 加载文件夹树
+        await loadFolderTree();
+        
+        // 显示移动对话框
+        showMoveDialog = true;
+    }
+
+    /**
+     * 加载文件夹树（根目录）
+     */
+    async function loadFolderTree() {
+        if (!isLoggedIn || !token) {
+            error = "请先登录";
+            return;
+        }
+
+        isLoadingFolderTree = true;
+        error = "";
+        expandedFolders.clear();
+        loadingSubfolders.clear();
+
+        try {
+            const serverUrl = plugin.settingUtils.get("serverUrl");
+            
+            const response = await fetch(`${serverUrl}/api/fs/dirs`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token
+                },
+                body: JSON.stringify({
+                    path: "/",
+                    password: ""
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            if (data.code !== 200) {
+                throw new Error(data.message || '获取文件夹列表失败');
+            }
+            
+            // 为每个文件夹添加树形结构所需的属性
+            folderTree = (data.data || []).map(folder => ({
+                ...folder,
+                path: folder.path || `/${folder.name}`,
+                children: [],
+                isExpanded: false,
+                hasChildren: true // 假设所有文件夹都可能有子文件夹
+            }));
+        } catch (err) {
+            console.error("Load folder tree failed:", err);
+            error = `加载文件夹树失败: ${err.message || '未知错误'}`;
+        } finally {
+            isLoadingFolderTree = false;
+        }
+    }
+
+    /**
+     * 加载指定路径的子文件夹
+     */
+    async function loadSubfolders(folderPath) {
+        if (!isLoggedIn || !token) {
+            return;
+        }
+
+        loadingSubfolders.add(folderPath);
+        loadingSubfolders = loadingSubfolders; // 触发响应式更新
+
+        try {
+            const serverUrl = plugin.settingUtils.get("serverUrl");
+            
+            const response = await fetch(`${serverUrl}/api/fs/dirs`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token
+                },
+                body: JSON.stringify({
+                    path: folderPath,
+                    password: ""
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            if (data.code !== 200) {
+                throw new Error(data.message || '获取子文件夹失败');
+            }
+            
+            // 更新文件夹树中对应节点的子文件夹
+            updateFolderChildren(folderTree, folderPath, data.data || []);
+            folderTree = folderTree; // 触发响应式更新
+            
+        } catch (err) {
+            console.error("Load subfolders failed:", err);
+            error = `加载子文件夹失败: ${err.message || '未知错误'}`;
+        } finally {
+            loadingSubfolders.delete(folderPath);
+            loadingSubfolders = loadingSubfolders; // 触发响应式更新
+        }
+    }
+
+    /**
+     * 递归更新文件夹树中指定路径的子文件夹
+     */
+    function updateFolderChildren(tree, targetPath, children) {
+        for (let folder of tree) {
+            if (folder.path === targetPath) {
+                folder.children = children.map(child => ({
+                    ...child,
+                    path: child.path || `${targetPath}/${child.name}`.replace('//', '/'),
+                    children: [],
+                    isExpanded: false,
+                    hasChildren: true
+                }));
+                folder.isExpanded = true;
+                return true;
+            }
+            if (folder.children && folder.children.length > 0) {
+                if (updateFolderChildren(folder.children, targetPath, children)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 切换文件夹展开/折叠状态
+     */
+    async function toggleFolder(folder) {
+        if (folder.isExpanded) {
+            // 折叠文件夹
+            folder.isExpanded = false;
+            expandedFolders.delete(folder.path);
+        } else {
+            // 展开文件夹
+            if (folder.children.length === 0) {
+                // 首次展开，需要加载子文件夹
+                await loadSubfolders(folder.path);
+            } else {
+                // 已有子文件夹数据，直接展开
+                folder.isExpanded = true;
+                expandedFolders.add(folder.path);
+            }
+        }
+        folderTree = folderTree; // 触发响应式更新
+    }
+
+    /**
+     * 递归渲染文件夹树
+     */
+    function renderFolderTree(folderData, level, isLast = false, prefix = '') {
+        const items = [];
+        const currentPrefix = level === 0 ? '' : prefix + (isLast ? '└── ' : '├── ');
+        items.push({ folder: folderData, level, prefix: currentPrefix, isLast });
+        if (folderData.isExpanded && folderData.children) {
+            const childPrefix = level === 0 ? '' : prefix + (isLast ? '    ' : '│   ');
+            for (let i = 0; i < folderData.children.length; i++) {
+                const child = folderData.children[i];
+                const childIsLast = i === folderData.children.length - 1;
+                items.push(...renderFolderTree(child, level + 1, childIsLast, childPrefix));
+            }
+        }
+        return items;
+    }
+
+    /**
+     * 重新加载文件列表
+     * 直接调用 API 重新获取最新的文件列表
+     */
+    async function refreshFileList() {
+        // 清除选中状态
+        selectedFiles.clear();
+        selectedFiles = selectedFiles; // 触发响应式更新
+        
+        // 直接调用 API 重新获取文件列表
+        await loadFiles(currentPath, true);
+    }
+
+    /**
+     * 执行移动操作
+     */
+    async function executeMove() {
+        if (!moveItem || !moveTargetPath) {
+            error = "请选择目标文件夹";
+            return;
+        }
+
+        isMoving = true;
+        error = "";
+
+        try {
+            const serverUrl = plugin.settingUtils.get("serverUrl");
+            
+            // 检查是文件还是文件夹
+            const file = files.find(f => f.name === moveItem);
+            const isFolder = file && file.is_dir;
+            
+            const apiEndpoint = isFolder ? '/api/fs/move_dir' : '/api/fs/move';
+            
+            const requestBody: any = {
+                src_dir: currentPath,
+                dst_dir: moveTargetPath,
+                names: [moveItem]
+            };
+            
+            // 如果允许覆盖，添加overwrite参数
+            if (allowOverwrite) {
+                requestBody.overwrite = true;
+            }
+            
+            const response = await fetch(`${serverUrl}${apiEndpoint}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token
+                },
+                body: JSON.stringify(requestBody)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            
+            // 根据API返回的message判断是否成功
+            if (result.message === 'success' || result.code === 200) {
+                // 移动成功
+                await pushMsg(`${isFolder ? '文件夹' : '文件'}移动成功: ${moveItem} → ${moveTargetPath}`);
+                
+                // 使用新的刷新函数，确保完全重新渲染
+                await refreshFileList();
+                
+                // 关闭对话框
+                closeMoveDialog();
+            } else {
+                throw new Error(result.message || '移动操作失败');
+            }
+            
+        } catch (err) {
+            console.error("Move item failed:", err);
+            error = `移动失败: ${err.message || '未知错误'}`;
+        } finally {
+            isMoving = false;
+        }
+    }
+
+    /**
+     * 移动选中的文件夹
+     */
+    async function moveSelectedFolder() {
+        if (selectedFolders.size === 0) {
+            error = "请选择要移动的文件夹";
+            return;
+        }
+
+        if (selectedFolders.size > 1) {
+            error = "移动操作只能选择一个文件夹";
+            return;
+        }
+
+        const folderName = Array.from(selectedFolders)[0];
+        moveItem = folderName;
+        
+        // 加载文件夹树
+        await loadFolderTree();
+        
+        // 显示移动对话框
+        showMoveDialog = true;
+    }
+
+    /**
+     * 关闭移动对话框
+     */
+    function closeMoveDialog() {
+        showMoveDialog = false;
+        moveTargetPath = "/";
+        moveItem = null;
+        allowOverwrite = false;
+        folderTree = [];
     }
 
     async function deleteSelectedFiles() {
@@ -957,12 +1275,11 @@ export let plugin;
                 }
             }
             
-            // 刷新文件列表
-            await loadFiles(currentPath);
-            
             // 显示成功提示
             await pushMsg(`成功删除 ${selectedFiles.size} 个文件！`);
-            selectedFiles.clear();
+            
+            // 使用新的刷新函数，确保完全重新渲染
+            await refreshFileList();
             
         } catch (err) {
             console.error("Delete files failed:", err);
@@ -1374,7 +1691,7 @@ export let plugin;
                 <button class="b3-button b3-button--small" on:click={showFunctionGroupDialog} disabled={isLoading}>
                     ⚙️ 功能
                 </button>
-                <button class="b3-button b3-button--small" on:click={() => loadFiles(currentPath, true)} disabled={isLoading}>
+                <button class="b3-button b3-button--small" on:click={refreshFileList} disabled={isLoading}>
                     🔄 刷新
                 </button>
             {/if}
@@ -1701,17 +2018,29 @@ export let plugin;
                                         {#if selectedFolders.size > 0}
                                             <div class="delete-actions">
                                                 <p class="selected-count">已选择 {selectedFolders.size} 个文件夹</p>
-                                                <button 
-                                                    class="b3-button b3-button--danger"
-                                                    on:click={deleteSelectedFolders}
-                                                    disabled={isDeletingFolders}
-                                                >
-                                                    {#if isDeletingFolders}
-                                                        删除中...
-                                                    {:else}
-                                                        🗑️ 删除选中的文件夹
-                                                    {/if}
-                                                </button>
+                                                <div class="folder-action-buttons">
+                                                    <button 
+                                                        class="b3-button b3-button--danger"
+                                                        on:click={deleteSelectedFolders}
+                                                        disabled={isDeletingFolders}
+                                                        style="margin-right: 8px;"
+                                                    >
+                                                        {#if isDeletingFolders}
+                                                            删除中...
+                                                        {:else}
+                                                            🗑️ 删除选中的文件夹
+                                                        {/if}
+                                                    </button>
+                                                    <button 
+                                                        class="b3-button"
+                                                        on:click={moveSelectedFolder}
+                                                        disabled={isDeletingFolders || selectedFolders.size !== 1}
+                                                        style="background-color: #FF9800; color: white;"
+                                                        title={selectedFolders.size > 1 ? "移动操作只能选择一个文件夹" : "移动选中的文件夹"}
+                                                    >
+                                                        📁 移动
+                                                    </button>
+                                                </div>
                                             </div>
                                         {/if}
                                     {/if}
@@ -1761,10 +2090,19 @@ export let plugin;
                                                         class="b3-button"
                                                         on:click={renameSelectedFile}
                                                         disabled={isDeletingFiles || selectedFiles.size !== 1}
-                                                        style="background-color: #2196F3; color: white;"
+                                                        style="background-color: #2196F3; color: white; margin-right: 8px;"
                                                         title={selectedFiles.size > 1 ? "重命名操作只能选择一个文件" : "重命名选中的文件"}
                                                     >
                                                         改文件名
+                                                    </button>
+                                                    <button 
+                                                        class="b3-button"
+                                                        on:click={moveSelectedItem}
+                                                        disabled={isDeletingFiles || selectedFiles.size !== 1}
+                                                        style="background-color: #FF9800; color: white;"
+                                                        title={selectedFiles.size > 1 ? "移动操作只能选择一个文件" : "移动选中的文件"}
+                                                    >
+                                                        📁 移动
                                                     </button>
                                                 </div>
                                             </div>
@@ -2117,6 +2455,104 @@ export let plugin;
                 <div class="preview-footer">
                     <button class="b3-button" on:click={closePreview}>
                         关闭
+                    </button>
+                </div>
+            </div>
+        </div>
+    {/if}
+
+    <!-- 移动对话框 -->
+    {#if showMoveDialog}
+        <div class="preview-overlay" on:click={closeMoveDialog}>
+            <div class="preview-dialog" on:click|stopPropagation style="max-width: 600px; max-height: 80vh;">
+                <div class="preview-header">
+                    <h3>📁 移动文件/文件夹: {moveItem}</h3>
+                    <button class="close-btn" on:click={closeMoveDialog}>✕</button>
+                </div>
+                
+                <div class="preview-body" style="padding: 20px;">
+                    {#if isLoadingFolderTree}
+                        <div class="preview-loading">
+                            <div class="loading-spinner"></div>
+                            <span>加载文件夹树中...</span>
+                        </div>
+                    {:else}
+                        <div class="move-content">
+                            <div class="move-section">
+                                <h4>选择目标文件夹：</h4>
+                                <div class="folder-tree">
+                                    <!-- 根目录选项 -->
+                                    <div class="folder-item root-folder" 
+                                         class:selected={moveTargetPath === "/"}
+                                         on:click={() => moveTargetPath = "/"}>
+                                        <div class="folder-content">
+                                            <span class="folder-name">/</span>
+                                        </div>
+                                    </div>
+                                    <!-- 递归渲染文件夹树 -->
+                                    {#each folderTree as folder}
+                                        {#each renderFolderTree(folder, 0) as {folder: currentFolder, prefix}}
+                                            <div class="folder-item" 
+                                                 class:selected={moveTargetPath === currentFolder.path}>
+                                                <div class="folder-content"
+                                                     on:click={() => {
+                                                         moveTargetPath = currentFolder.path;
+                                                         if (currentFolder.hasChildren) {
+                                                             toggleFolder(currentFolder);
+                                                         }
+                                                     }}>
+                                                    <span class="tree-prefix">{prefix}</span>
+                                                    {#if currentFolder.hasChildren}
+                                                        <span class="folder-toggle" 
+                                                              on:click|stopPropagation={() => toggleFolder(currentFolder)}>
+                                                            {#if loadingSubfolders.has(currentFolder.path)}
+                                                                [⋯]
+                                                            {:else}
+                                                                {currentFolder.isExpanded ? '[-]' : '[+]'}
+                                                            {/if}
+                                                        </span>
+                                                    {:else}
+                                                        <span class="folder-toggle"></span>
+                                                    {/if}
+                                                    <span class="folder-name">{currentFolder.name}</span>
+                                                </div>
+                                            </div>
+                                        {/each}
+                                    {/each}
+                                </div>
+                            </div>
+                            
+                            <div class="move-options">
+                                <label class="option-item">
+                                    <input 
+                                        type="checkbox" 
+                                        bind:checked={allowOverwrite}
+                                    />
+                                    <span>允许覆盖</span>
+                                </label>
+                            </div>
+                            
+                            {#if error}
+                                <div class="move-error">{error}</div>
+                            {/if}
+                        </div>
+                    {/if}
+                </div>
+                
+                <div class="preview-footer">
+                    <button class="b3-button" on:click={closeMoveDialog}>
+                        取消
+                    </button>
+                    <button 
+                        class="b3-button b3-button--primary" 
+                        on:click={executeMove}
+                        disabled={isMoving || !moveTargetPath || isLoadingFolderTree}
+                    >
+                        {#if isMoving}
+                            移动中...
+                        {:else}
+                            确认移动
+                        {/if}
                     </button>
                 </div>
             </div>
@@ -3113,7 +3549,24 @@ export let plugin;
         border-top: 1px solid var(--b3-theme-surface-lighter);
         display: flex;
         justify-content: flex-end;
-        background: var(--b3-theme-surface);
+        gap: 12px;
+        background: var(--b3-theme-surface-lighter);
+        
+        .b3-button {
+             min-width: 80px;
+             padding: 8px 16px;
+             
+             &:not(.b3-button--primary) {
+                 background: var(--b3-theme-surface);
+                 border: 1px solid var(--b3-theme-surface-lighter);
+                 color: var(--b3-theme-on-surface);
+                 
+                 &:hover {
+                     background: var(--b3-theme-surface-lighter);
+                     color: var(--b3-theme-on-surface);
+                 }
+             }
+         }
     }
 
     // 离线下载样式
@@ -3345,6 +3798,129 @@ export let plugin;
     .task-creator {
         font-size: 12px;
         color: var(--b3-theme-on-surface-light);
+    }
+
+    // 移动对话框样式
+    .move-content {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .move-section {
+        h4 {
+            margin: 0 0 12px 0;
+            font-size: 14px;
+            color: var(--b3-theme-on-surface);
+            font-weight: 600;
+        }
+    }
+
+    .folder-tree {
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid var(--b3-theme-surface-lighter);
+        border-radius: 6px;
+        padding: 12px;
+        background: var(--b3-theme-surface);
+        width: 100%;
+        font-family: var(--b3-font-family-code);
+        font-size: 13px;
+        line-height: 1.2;
+    }
+
+    .folder-item {
+        margin: 0;
+        border-radius: 0;
+        transition: background-color 0.2s;
+        line-height: 1.2;
+        font-family: var(--b3-font-family-code);
+        white-space: nowrap;
+
+        &.selected {
+            background: var(--b3-theme-primary-lighter);
+            color: var(--b3-theme-primary);
+        }
+
+        &.root-folder {
+            padding: 4px 0;
+            cursor: pointer;
+            font-weight: 500;
+            border-bottom: 1px solid var(--b3-theme-surface-lighter);
+            margin-bottom: 8px;
+
+            &:hover {
+                background: var(--b3-theme-surface-lighter);
+            }
+        }
+
+        &:hover {
+            background: var(--b3-theme-surface-lighter);
+        }
+    }
+
+    .folder-content {
+        padding: 2px 0;
+        cursor: pointer;
+        user-select: none;
+        font-family: var(--b3-font-family-code);
+        color: var(--b3-theme-on-surface);
+    }
+
+    .folder-toggle {
+        display: inline;
+        font-size: 13px;
+        cursor: pointer;
+        user-select: none;
+        color: var(--b3-theme-on-surface);
+        margin-right: 1ch;
+    }
+
+    .folder-name {
+        display: inline;
+        font-size: 13px;
+        color: var(--b3-theme-on-surface);
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .tree-prefix {
+        color: var(--b3-theme-on-surface-light);
+        font-family: var(--b3-font-family-code);
+        white-space: pre;
+    }
+
+    .move-options {
+        padding: 12px;
+        background: var(--b3-theme-surface-lighter);
+        border-radius: 6px;
+        border-left: 3px solid var(--b3-theme-primary);
+    }
+
+    .option-item {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        
+        input[type="checkbox"] {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+        
+        span {
+            font-size: 13px;
+            color: var(--b3-theme-on-surface);
+            user-select: none;
+        }
+    }
+
+    .move-error {
+        padding: 8px 12px;
+        background: var(--b3-theme-error-lighter);
+        color: var(--b3-theme-error);
+        border-radius: 4px;
+        font-size: 12px;
+        border-left: 3px solid var(--b3-theme-error);
     }
 </style>
 

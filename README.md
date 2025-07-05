@@ -1,278 +1,294 @@
 
-# SiYuan plugin sample with vite and svelte
+# AList 文件浏览器插件
 
-[中文版](./README_zh_CN.md)
+> 🚀 将 AList 文件管理器无缝集成到思源笔记侧边栏的强大插件
 
-> Consistent with [siyuan/plugin-sample](https://github.com/siyuan-note/plugin-sample) [v0.3.5](https://github.com/siyuan-note/plugin-sample/tree/v0.3.5)
+[![GitHub release](https://img.shields.io/github/v/release/jeasionr-ui/openlist)](https://github.com/jeasionr-ui/openlist/releases)
+[![License](https://img.shields.io/github/license/jeasionr-ui/openlist)](./LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/jeasionr-ui/openlist/total)](https://github.com/jeasionr-ui/openlist/releases)
 
+## 📖 项目简介
 
+**AList 文件浏览器插件** 为思源笔记用户提供了完整的文件管理解决方案。通过深度集成 AList 文件管理器，您可以：
 
-1. Using vite for packaging
-2. Use symbolic linking instead of putting the project into the plugins directory program development
-3. Built-in support for the svelte framework
+- 🗂️ 在思源笔记侧边栏中直接浏览和管理文件
+- 📎 将 AList 文件无缝嵌入到笔记内容中
+- 🔄 实现笔记与文件管理的一体化体验
+- 🌐 支持本地和远程文件服务器访问
 
-     > **If don't want svelte, turn to this template**: [frostime/plugin-sample-vite](https://github.com/frostime/plugin-sample-vite)
-     >
-     > **We also provide with a vite+solidjs template**: [frostime/plugin-sample-vite-solidjs](https://github.com/frostime/plugin-sample-vite-solidjs)
+## 💝 支持开发
 
-4. Provides a github action template to automatically generate package.zip and upload to new release
+如果这个插件对您有帮助，欢迎支持开发者：
 
+- 🎯 **自愿赞助**：0.5元/月起（完全自愿，无任何功能限制）
+- 🚀 **持续更新**：您的支持将激励我持续完善插件功能
+- ⭐ **免费使用**：插件免费，赞助仅用于激励开发
 
-> [!TIP]
-> You can also use our maintained [siyuan-plugin-cli](https://www.npmjs.com/package/siyuan-plugin-cli) command-line tool to directly build plugins in your local terminal.
->
-> Additionally, for the `make-link` related commands mentioned in this plugin, all future updates will be made in [siyuan-plugin-cli](https://www.npmjs.com/package/siyuan-plugin-cli).
->
-> The built-in `make-link` scripts may also be removed in a future version, in favor of using the `siyuan-plugin-cli` tool, aiming to simplify the workload of maintaining multiple plugin templates.
+<div align="center">
+  <img src="./doc/AliPay.JPG" alt="支付宝赞助" width="180" style="margin: 10px;">
+  <img src="./doc/WeChat.JPG" alt="微信赞助" width="180" style="margin: 10px;">
+  <br>
+  <small>扫码赞助支持开发 ❤️</small>
+</div>
 
+## ✨ 功能特性
 
-## Get started
+### 🗂️ 文件管理
+- ✅ **完整文件操作**：浏览、上传、下载、删除、重命名、移动
+- 📁 **文件夹管理**：创建、删除、重命名、移动文件夹
+- 🔄 **批量操作**：多选文件进行批量处理
+- 🎯 **拖拽上传**：直观的拖拽式文件上传体验
+- 🔍 **智能搜索**：快速定位和筛选文件
 
-1. Use the <kbd>Use this template</kbd> button to make a copy of this repo as a template. Note that the repository name should match the plugin name, and the default branch must be `main`.
-2. Clone your repository to the local development folder.
-    * Note: Unlike `plugin-sample`, this example does not recommend directly downloading the code to `{workspace}/data/plugins/`.
-3. Install [NodeJS](https://nodejs.org/en/download) and [pnpm](https://pnpm.io/installation), then run `pnpm i` in the development folder to install the required dependencies.
-4. Run the `pnpm run make-link` command to create a symbolic link (Windows developers, please refer to the "make-link on Windows" section below).
-5. Execute `pnpm run dev` for real-time compilation.
-6. Open the marketplace in SiYuan and enable the plugin in the download tab.
+### 🎬 多媒体预览
+- 🖼️ **图片预览**：JPG、PNG、GIF、WebP、SVG、BMP
+- 🎥 **视频播放**：MP4、WebM、OGV、AVI、MOV
+- 🎵 **音频播放**：MP3、WAV、OGG、FLAC、AAC
+- 📄 **文档查看**：TXT、MD、JSON、XML、CSV
+- 📋 **PDF 支持**：在线 PDF 文档预览
 
-### Setting the Target Directory for the make-link Command
+### 🔐 安全与认证
+- 🔑 **令牌认证**：基于 AList 服务器的安全身份验证
+- 🚀 **自动登录**：启动时自动连接服务器
+- 👥 **权限控制**：完全遵循 AList 服务器权限设置
+- 🛡️ **数据安全**：所有操作通过加密连接传输
 
-The `make-link` command creates a symbolic link that binds your `dev` directory to the SiYuan plugin directory. You can configure the target SiYuan workspace and create the symbolic link in three ways:
+### 🌟 用户体验
+- 🌍 **多语言支持**：中文、英文界面完整支持
+- 📱 **响应式设计**：完美适配桌面端和移动端
+- ⚡ **实时反馈**：文件操作进度实时显示
+- 🎨 **现代界面**：简洁美观的用户界面设计
+- 🔧 **智能错误处理**：友好的错误提示和自动恢复
 
-1. **Select Workspace**
-    - Open SiYuan, ensure the SiYuan kernel is running.
-    - Run `pnpm run make-link`, the script will automatically detect all SiYuan workspaces, please manually enter the number to select the workspace.
-        ```bash
-        >>> pnpm run make-link
-        > plugin-sample-vite-svelte@0.0.3 make-link H:\SrcCode\开源项目\plugin-sample-vite-svelte
-        > node  --no-warnings ./scripts/make_dev_link.js
+## 📦 安装方式
 
-        "targetDir" is empty, try to get SiYuan directory automatically....
-        Got 2 SiYuan workspaces
-        [0] H:\Media\SiYuan
-        [1] H:\临时文件夹\SiYuanDevSpace
-        Please select a workspace[0-1]: 0
-        Got target directory: H:\Media\SiYuan/data/plugins
-        Done! Created symlink H:\Media\SiYuan/data/plugins/plugin-sample-vite-svelte
-        ```
-2. **Manually Configure Target Directory**
-    - Open the `./scripts/make_dev_link.js` file, change `targetDir` to the SiYuan plugin directory `<siyuan workspace>/data/plugins`.
-    - Run the `pnpm run make-link` command. If you see a message similar to the one below, it indicates successful creation:
+### 🏪 方式一：思源笔记集市（推荐）
 
-3. **Set Environment Variable to Create Symbolic Link**
-    - Set the system environment variable `SIYUAN_PLUGIN_DIR` to the path `workspace/data/plugins`.
+1. 📱 打开思源笔记应用
+2. ⚙️ 进入 `设置` → `集市` → `插件`
+3. 🔍 搜索 "**AList File Browser**" 或 "**openlist**"
+4. ⬇️ 点击 `下载` 并启用插件
+5. 🎉 安装完成，即可在侧边栏使用
 
-### make-link on Windows
+### 📦 方式二：手动安装
 
-Due to SiYuan upgrading to Go 1.23, the old version of junction links cannot be recognized normally on Windows, so it has been changed to create `dir` symbolic links.
+1. 🌐 访问 [GitHub Releases](https://github.com/jeasionr-ui/openlist/releases) 页面
+2. ⬇️ 下载最新版本的 `package.zip` 文件
+3. 📁 解压到思源笔记工作空间的 `data/plugins/` 目录
+4. 🔄 重启思源笔记应用
+5. ✅ 在 `设置` → `集市` → `已下载` 中启用插件
 
-> https://github.com/siyuan-note/siyuan/issues/12399
+> 💡 **提示**：推荐使用集市安装，可自动获取更新通知
 
-However, creating directory symbolic links on Windows using NodeJs may require administrator privileges. You have the following options:
+## ⚙️ 配置设置
 
-1. Run `pnpm run make-link` in a command line with administrator privileges.
-2. Configure Windows settings, enable developer mode in [System Settings - Update & Security - Developer Mode] then run `pnpm run make-link`.
-3. Run `pnpm run make-link-win`, this command will use a PowerShell script to request administrator privileges, requiring the system to enable PowerShell script execution permissions.
+### 🔧 首次配置
 
-## I18n
+#### 1. 打开插件设置
+- 📋 进入 `设置` → `插件` → `AList 文件浏览器`
 
-In terms of internationalization, our main consideration is to support multiple languages. Specifically, we need to
-complete the following tasks:
+#### 2. 配置连接参数
 
-* Meta information about the plugin itself, such as plugin description and readme
-    * `description` and `readme` fields in plugin.json, and the corresponding README*.md file
-* Text used in the plugin, such as button text and tooltips
-    * public/i18n/*.json language configuration files
-    * Use `this.i18.key` to get the text in the code
-* YAML Support
-  * This template specifically supports I18n based on YAML syntax, see `public/i18n/zh_CN.yaml`
-  * During compilation, the defined YAML files will be automatically translated into JSON files and placed in the dist or dev directory.
+| 配置项 | 说明 | 示例 |
+|--------|------|------|
+| 🌐 **服务器地址** | AList 服务器的完整地址 | `http://localhost:5244`<br>`https://files.example.com` |
+| 👤 **用户名** | AList 服务器登录用户名 | `admin` 或您的用户名 |
+| 🔐 **密码** | 对应的登录密码 | 您的 AList 密码 |
+| 📁 **根路径** | 文件浏览的起始目录 | `/`（默认）或 `/documents` |
+| 🚀 **自动登录** | 启动时自动连接服务器 | ✅ 推荐开启 |
 
-It is recommended that the plugin supports at least English and Simplified Chinese, so that more people can use it more
-conveniently.
+#### 3. 保存设置
+- 💾 点击 `保存` 按钮完成配置
+- 🔄 插件将自动尝试连接服务器
 
-## plugin.json
+### 📋 AList 服务器要求
 
-```json
-{
-  "name": "plugin-sample-vite-svelte",
-  "author": "frostime",
-  "url": "https://github.com/siyuan-note/plugin-sample-vite-svelte",
-  "version": "0.1.3",
-  "minAppVersion": "2.8.8",
-  "backends": ["windows", "linux", "darwin"],
-  "frontends": ["desktop"],
-  "displayName": {
-    "en_US": "Plugin sample with vite and svelte",
-    "zh_CN": "插件样例 vite + svelte 版"
-  },
-  "description": {
-    "en_US": "SiYuan plugin sample with vite and svelte",
-    "zh_CN": "使用 vite 和 svelte 开发的思源插件样例"
-  },
-  "readme": {
-    "en_US": "README_en_US.md",
-    "zh_CN": "README.md"
-  },
-  "funding": {
-    "openCollective": "",
-    "patreon": "",
-    "github": "",
-    "custom": [
-      "https://ld246.com/sponsor"
-    ]
-  },
-  "keywords": [
-    "sample", "示例"
-  ]
-}
-```
+| 要求项目 | 最低要求 | 推荐配置 |
+|----------|----------|----------|
+| 🔢 **AList 版本** | v3.0+ | v3.8+ |
+| 🌐 **网络访问** | HTTP/HTTPS 可达 | HTTPS + 域名 |
+| 👥 **用户权限** | 读取权限 | 完整文件操作权限 |
+| 🔒 **安全设置** | 基础认证 | 启用 CORS + Token |
 
-* `name`: Plugin name, must be the same as the repo name, and must be unique globally (no duplicate plugin names in the
-  marketplace)
-* `author`: Plugin author name
-* `url`: Plugin repo URL
-* `version`: Plugin version number, it is recommended to follow the [semver](https://semver.org/) specification
-* `minAppVersion`: Minimum version number of SiYuan required to use this plugin
-* `backends`: Backend environment required by the plugin, optional values are `windows`, `linux`, `darwin`, `docker`, `android`, `ios` and `all`
-  * `windows`: Windows desktop
-  * `linux`: Linux desktop
-  * `darwin`: macOS desktop
-  * `docker`: Docker
-  * `android`: Android APP
-  * `ios`: iOS APP
-  * `all`: All environments
-* `frontends`: Frontend environment required by the plugin, optional values are `desktop`, `desktop-window`, `mobile`, `browser-desktop`, `browser-mobile` and `all`
-  * `desktop`: Desktop
-  * `desktop-window`: Desktop window converted from tab
-  * `mobile`: Mobile APP
-  * `browser-desktop`: Desktop browser
-  * `browser-mobile`: Mobile browser
-  * `all`: All environments
-* `displayName`: Template display name, mainly used for display in the marketplace list, supports multiple languages
-    * `default`: Default language, must exist
-    * `zh_CN`, `en_US` and other languages: optional, it is recommended to provide at least Chinese and English
-* `description`: Plugin description, mainly used for display in the marketplace list, supports multiple languages
-    * `default`: Default language, must exist
-    * `zh_CN`, `en_US` and other languages: optional, it is recommended to provide at least Chinese and English
-* `readme`: readme file name, mainly used to display in the marketplace details page, supports multiple languages
-    * `default`: Default language, must exist
-    * `zh_CN`, `en_US` and other languages: optional, it is recommended to provide at least Chinese and English
-* `funding`: Plugin sponsorship information
-    * `openCollective`: Open Collective name
-    * `patreon`: Patreon name
-    * `github`: GitHub login name
-    * `custom`: Custom sponsorship link list
-* `keywords`: Search keyword list, used for marketplace search function
+> ⚠️ **注意**：确保思源笔记可以正常访问您的 AList 服务器地址
 
-## Package
+## 🚀 使用指南
 
-No matter which method is used to compile and package, we finally need to generate a package.zip, which contains at
-least the following files:
+### 🎯 基本操作流程
 
-* i18n/*
-* icon.png (160*160)
-* index.css
-* index.js
-* plugin.json
-* preview.png (1024*768)
-* README*.md
+#### 1. 🔗 连接服务器
+- 🖱️ 点击思源笔记侧边栏中的 **AList 图标**
+- 🚀 首次使用会自动尝试登录（需启用自动登录）
+- 🔑 或手动点击 `登录` 按钮进行连接
+- ✅ 连接成功后显示文件列表
 
-## List on the marketplace
+#### 2. 📁 文件浏览
+- 📂 **展开目录**：点击文件夹图标展开/收起
+- 🍞 **面包屑导航**：快速跳转到上级目录
+- 📍 **路径跳转**：在路径输入框直接输入目录路径
+- 🔍 **搜索文件**：使用搜索框快速定位文件
 
-* `pnpm run build` to generate package.zip
-* Create a new GitHub release using your new version number as the "Tag version". See here for an
-  example: https://github.com/siyuan-note/plugin-sample/releases
-* Upload the file package.zip as binary attachments
-* Publish the release
+#### 3. ⚡ 文件操作
+- 🖱️ **右键菜单**：右键文件/文件夹查看所有可用操作
+- 👆 **双击操作**：双击文件进行预览或下载
+- 🎯 **拖拽上传**：直接拖拽文件到目标目录
+- ✂️ **批量操作**：按住 Ctrl/Cmd 多选文件进行批量处理
 
-If it is the first release, please create a pull request to
-the [Community Bazaar](https://github.com/siyuan-note/bazaar) repository and modify the plugins.json file in it. This
-file is the index of all community plugin repositories, the format is:
+### 🚀 高级功能
 
-```json
-{
-  "repos": [
-    "username/reponame"
-  ]
-}
-```
+#### 📦 批量文件管理
+- 🖱️ **多选操作**：`Ctrl`（Windows/Linux）或 `Cmd`（Mac）+ 点击
+- 🗑️ **批量删除**：一次性删除多个文件/文件夹
+- 📁 **批量移动**：将多个文件移动到指定目录
+- ⬇️ **批量下载**：同时下载多个文件
+- ⬆️ **批量上传**：选择多个文件同时上传
 
-After the PR is merged, the bazaar will automatically update the index and deploy through GitHub Actions. When releasing
-a new version of the plugin in the future, you only need to follow the above steps to create a new release, and you
-don't need to PR the community bazaar repo.
+#### 🔍 智能搜索与筛选
+- 🎯 **模糊搜索**：支持文件名部分匹配
+- 🏷️ **类型筛选**：按文件扩展名筛选显示
+- 📅 **时间排序**：按修改时间或创建时间排序
+- 📏 **大小排序**：按文件大小升序或降序排列
 
-Under normal circumstances, the community bazaar repo will automatically update the index and deploy every hour,
-and you can check the deployment status at https://github.com/siyuan-note/bazaar/actions.
+#### ⚡ 上传进度管理
+- 📊 **实时进度**：显示上传进度条和传输速度
+- ⏸️ **暂停/恢复**：支持暂停和恢复上传任务
+- 🔄 **自动刷新**：上传完成后自动刷新文件列表
+- 📈 **队列管理**：多文件上传队列显示和管理
 
-## Use Github Action
+## 🔧 故障排除
 
-The github action is included in this sample, you can use it to publish your new realse to marketplace automatically:
+### 常见问题解决
 
-1. In your repo setting page `https://github.com/OWNER/REPO/settings/actions`, down to **Workflow Permissions** and open the configuration like this:
+| 问题 | 可能原因 | 解决方案 |
+|------|----------|----------|
+| 登录失败 | 服务器地址、用户名或密码错误 | 检查配置信息，确认 AList 服务器状态 |
+| 连接超时 | 网络问题或服务器不可达 | 检查网络连接，确认服务器地址正确 |
+| 上传失败 | 文件权限或存储空间不足 | 检查 AList 服务器的存储空间和权限设置 |
+| 插件无响应 | 插件未正确加载 | 重启思源笔记，确认插件已启用 |
+| 文件预览异常 | 文件格式不支持或文件损坏 | 尝试下载文件或使用其他工具打开 |
 
-    ![](asset/action.png)
+### ⚠️ 已知问题
 
-2. Push a tag in the format `v*` and github will automatically create a new release with new bulit package.zip
+| 问题描述 | 影响程度 | 临时解决方案 | 修复状态 |
+|----------|----------|--------------|----------|
+| 上传文件后不立即显示 | 🟡 中等 | 手动点击刷新按钮 | 🔄 开发中 |
+| 移动文件后原位置仍显示 | 🟡 中等 | 关闭功能组重新打开 | 🔄 开发中 |
 
-3. By default, it will only publish a pre-release, if you don't think this is necessary, change the settings in release.yml
+> 📝 **说明**：这些问题主要由 AList 缓存机制导致，我们正在开发自动刷新功能来解决
 
-    ```yaml
-    - name: Release
-        uses: ncipollo/release-action@v1
-        with.
-            allowUpdates: true
-            artifactErrorsFailBuild: true
-            artifacts: 'package.zip'
-            token: ${{ secrets.GITHUB_TOKEN }}
-            prerelease: true # change this to false
-    ```
+### 调试模式
 
+1. 在插件设置中启用 `调试模式`
+2. 打开浏览器开发者工具
+3. 查看 Console 标签页中的详细日志信息
+4. 将错误信息反馈给开发者
 
-## How to remove svelte dependencies
+### 性能优化建议
 
-> Pure vite without svelte: https://github.com/frostime/plugin-sample-vite
+- **大文件处理**：建议分批上传大量文件
+- **网络优化**：使用稳定的网络连接
+- **缓存清理**：定期清理浏览器缓存
 
-This plugin is packaged in vite and provides a dependency on the svelte framework. However, in practice some developers may not want to use svelte and only want to use the vite package.
+## 🤝 支持与反馈
 
-In fact you can use this template without using svelte without any modifications at all. The compilation-related parts of the svelte compilation are loaded into the vite workflow as plugins, so even if you don't have svelte in your project, it won't matter much.
+### 获取帮助
 
-If you insist on removing all svelte dependencies so that they do not pollute your workspace, you can perform the following steps. 1.
+- 📧 **邮件联系**：[jeasionr@foxmail.com](mailto:jeasionr@foxmail.com)
+- 🐛 **问题反馈**：[GitHub Issues](https://github.com/jeasionr-ui/openlist/issues)
+- 💡 **功能建议**：欢迎在 GitHub 上提出新功能建议
+- ⭐ **项目支持**：如果插件对您有帮助，请为项目点星
 
-1. delete the
-    ```json
-    {
-      "@sveltejs/vite-plugin-svelte": "^2.0.3",
-      "@tsconfig/svelte": "^4.0.1",
-      "svelte": "^3.57.0"
-    }
-    ```
-2. delete the `svelte.config.js` file
-3. delete the following line from the `vite.config.js` file
-    - Line 6: `import { svelte } from "@sveltejs/vite-plugin-svelte"`
-    - Line 20: `svelte(),`
-4. delete line 37 of `tsconfig.json` from `"svelte"` 5.
-5. re-run `pnpm i`
+### 贡献方式
 
-## Developer's Guide
+- 🔍 **测试反馈**：报告使用中遇到的问题
+- 📝 **文档改进**：帮助完善使用文档
+- 🌐 **翻译贡献**：协助多语言本地化
+- 💻 **代码贡献**：提交功能改进或修复
 
-Developers of SiYuan need to pay attention to the following specifications.
+## 📋 更新日志
 
-### 1. File Reading and Writing Specifications
+### 🎉 v1.0.0 (2025-01-05)
+- ✨ **核心功能**：完整的文件浏览和管理功能
+- 🔗 **服务器集成**：AList 服务器深度集成支持
+- 👀 **文件预览**：多种文件类型预览支持
+- 📦 **批量操作**：批量文件操作功能
+- 🎨 **界面优化**：现代化用户界面设计
+- 🌍 **多语言**：中英文界面支持
 
-If plugins or external extensions require direct reading or writing of files under the `data` directory, please use the kernel API to achieve this. **Do not call `fs` or other electron or nodejs APIs directly**, as it may result in data loss during synchronization and cause damage to cloud data.
+## 🛣️ 开发路线图
 
-Related APIs can be found at: `/api/file/*` (e.g., `/api/file/getFile`).
+### 🔄 v1.1.0 (计划中)
+- 🔧 修复缓存刷新问题
+- ⚡ 自动刷新机制优化
+- 🎯 文件操作体验改进
 
-### 2. Daily Note Attribute Specifications
+### 🚀 v1.2.0 (规划中)
+- 🌐 更多语言支持
+- 📱 移动端体验优化
+- 🔍 高级搜索功能
+- 🎨 主题定制支持
 
-When creating a daily note in SiYuan, a custom-dailynote-yyyymmdd attribute will be automatically added to the document to distinguish it from regular documents.
+## 📚 常见问题 (FAQ)
 
-> For more details, please refer to [Github Issue #9807](https://github.com/siyuan-note/siyuan/issues/9807).
+<details>
+<summary><strong>Q: 为什么上传文件后不立即显示？</strong></summary>
 
-Developers should pay attention to the following when developing the functionality to manually create Daily Notes:
+**A:** 这是由于 AList 服务器的缓存机制导致的。解决方案：
+- 🔄 点击界面上的刷新按钮
+- ⏱️ 等待 5-10 秒后自动刷新
+- 🔧 我们正在开发自动刷新功能来解决此问题
+</details>
 
-* If `/api/filetree/createDailyNote` is called to create a daily note, the attribute will be automatically added to the document, and developers do not need to handle it separately
-* If a document is created manually by developer's code (e.g., using the `createDocWithMd` API to create a daily note), please manually add this attribute to the document
+<details>
+<summary><strong>Q: 移动文件后为什么原位置还显示文件？</strong></summary>
+
+**A:** 同样是缓存机制问题。解决方案：
+- 🔄 关闭侧边栏功能组，重新打开
+- 🖱️ 点击刷新按钮更新文件列表
+- ⚡ 即将推出的版本将自动处理此问题
+</details>
+
+<details>
+<summary><strong>Q: 插件支持哪些文件操作？</strong></summary>
+
+**A:** 支持完整的文件管理操作：
+- 文件：上传、下载、删除、重命名、移动、预览
+- 文件夹：创建、删除、重命名、移动
+- 批量操作：多选文件进行批量处理
+</details>
+
+<details>
+<summary><strong>Q: 如何报告问题或建议功能？</strong></summary>
+
+**A:** 您可以通过以下方式联系我们：
+- 在 [GitHub Issues](https://github.com/jeasionr-ui/openlist/issues) 提交问题
+- 发送邮件至 [jeasionr@foxmail.com](mailto:jeasionr@foxmail.com)
+- 我们会及时回复并处理您的反馈
+</details>
+
+<details>
+<summary><strong>Q: 插件是否支持多个 AList 服务器？</strong></summary>
+
+**A:** 当前版本仅支持单个 AList 服务器连接。多服务器支持功能已列入开发计划，将在后续版本中提供。
+</details>
+
+<details>
+<summary><strong>Q: 文件上传有大小限制吗？</strong></summary>
+
+**A:** 上传限制主要取决于以下因素：
+- 🖥️ **AList 服务器配置**：查看服务器的上传大小限制
+- 🌐 **网络环境**：建议大文件使用稳定网络上传
+- 💾 **存储空间**：确保目标目录有足够存储空间
+- 📊 **建议**：单文件建议不超过 2GB，以获得最佳体验
+</details>
+
+<details>
+<summary><strong>Q: 如何提高文件传输速度？</strong></summary>
+
+**A:** 优化传输速度的方法：
+- 🌐 **网络优化**：使用有线网络或稳定的 WiFi
+- 📦 **分批上传**：大量文件建议分批次上传
+- 🔧 **服务器优化**：确保 AList 服务器性能良好
+- ⚡ **并发控制**：避免同时进行过多文件操作
+</details>
 
