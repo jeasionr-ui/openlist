@@ -129,5 +129,6 @@ jobs:
           prerelease: false
           name: "AList 文件浏览器插件 ${{ steps.extract_version.outputs.VERSION }}"
           body: ${{ steps.extract_notes.outputs.RELEASE_NOTES }}
-          generateReleaseNotes: true
+          generateReleaseNotes: false
           makeLatest: true
+          removeArtifacts: true
