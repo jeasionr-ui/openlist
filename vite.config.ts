@@ -86,7 +86,8 @@ export default defineConfig({
                     zipPack({
                         inDir: './dist',
                         outDir: './',
-                        outFileName: 'package.zip'
+                        outFileName: 'alist.zip',
+                        pathPrefix: ''
                     })
                 ])
             ],
