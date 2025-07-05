@@ -98,21 +98,21 @@ jobs:
             # If still empty, provide default content
             if [ ! -s release_notes.txt ]; then
               cat > release_notes.txt << 'EOL'
-## 🚀 新版本发布
-
-本版本包含功能改进和问题修复。
-
-### 📋 完整更新日志
-
-请查看 [CHANGELOG.md](./CHANGELOG.md) 获取详细信息。
-EOL
+          ## 🚀 新版本发布
+          
+          本版本包含功能改进和问题修复。
+          
+          ### 📋 完整更新日志
+          
+          请查看 [CHANGELOG.md](./CHANGELOG.md) 获取详细信息。
+          EOL
             fi
           else
             cat > release_notes.txt << 'EOL'
-## 🚀 新版本发布
-
-本版本包含功能改进和问题修复。
-EOL
+          ## 🚀 新版本发布
+          
+          本版本包含功能改进和问题修复。
+          EOL
           fi
           echo "RELEASE_NOTES<<EOF" >> $GITHUB_OUTPUT
           cat release_notes.txt >> $GITHUB_OUTPUT
