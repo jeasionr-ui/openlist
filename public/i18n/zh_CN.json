@@ -25,39 +25,22 @@
     "embed": "嵌入到笔记",
     
     "settings": {
-        "serverUrl": {
-            "title": "AList 服务器地址",
-            "description": "AList 服务器的完整地址，例如：http://localhost:5244"
-        },
-        "username": {
-            "title": "用户名",
-            "description": "AList 登录用户名"
-        },
-        "password": {
-            "title": "密码",
-            "description": "AList 登录密码"
-        },
-        "rootPath": {
-            "title": "根路径",
-            "description": "AList 文件浏览的根路径，默认为根目录"
-        },
-        "autoLogin": {
-            "title": "自动登录",
-            "description": "启动时自动登录到 AList 服务器"
-        },
-        "testConnection": {
-            "title": "测试连接",
-            "description": "测试与 AList 服务器的连接",
-            "label": "测试连接"
-        },
-        "lastPath": {
-            "title": "上次访问路径",
-            "description": "记录上次访问的文件夹路径，用于下次打开时恢复位置"
-        },
-        "usage": {
-            "title": "使用说明",
-            "description": "配置完成后，AList 文件浏览器将显示在侧边栏中。请确保 AList 服务器正在运行并且网络连接正常。"
-        }
+        "serverUrl": "AList 服务器地址",
+        "serverUrlDesc": "AList 服务器的完整地址，例如：http://localhost:5244",
+        "username": "用户名",
+        "usernameDesc": "AList 登录用户名",
+        "password": "密码",
+        "passwordDesc": "AList 登录密码",
+        "rootPath": "根路径",
+        "rootPathDesc": "AList 文件浏览的根路径，默认为根目录",
+        "autoLogin": "自动登录",
+        "autoLoginDesc": "启动时自动登录到 AList 服务器",
+        "testConnection": "测试连接",
+        "testConnectionDesc": "测试与 AList 服务器的连接",
+        "lastPath": "上次访问路径",
+        "lastPathDesc": "记录上次访问的文件夹路径，下次打开时恢复",
+        "usageInstructions": "使用说明",
+        "usageInstructionsDesc": "配置完成后，AList 文件浏览器将显示在侧边栏中。请确保 AList 服务器正在运行且网络连接正常。"
     },
     
     "errors": {
@@ -90,10 +73,52 @@
     },
     
     "messages": {
-        "serverUrlSaved": "✅ 服务器地址已保存",
-        "testingConnection": "正在测试连接...",
+        "loginSuccess": "登录成功",
+        "loginFailed": "登录失败",
+        "connectionTest": "连接测试",
         "connectionSuccess": "连接成功！",
         "connectionFailed": "连接失败：无效的响应",
+        "uploadSuccess": "上传成功",
+        "uploadFailed": "上传失败",
+        "deleteSuccess": "删除成功",
+        "deleteFailed": "删除失败",
+        "renameSuccess": "重命名成功",
+        "renameFailed": "重命名失败",
+        "moveSuccess": "移动成功",
+        "moveFailed": "移动失败",
+        "createFolderSuccess": "创建文件夹成功",
+        "createFolderFailed": "创建文件夹失败",
+        "downloadStarted": "下载已开始",
+        "downloadFailed": "下载失败",
+        "previewNotSupported": "不支持预览此文件类型",
+        "fileNotFound": "文件未找到",
+        "permissionDenied": "权限不足",
+        "networkError": "网络错误",
+        "serverError": "服务器错误",
+        "unknownError": "未知错误",
+        "pleaseSelectFile": "请选择文件",
+        "pleaseSelectFolder": "请选择文件夹",
+        "confirmDelete": "确认删除",
+        "confirmDeleteMessage": "确定要删除选中的项目吗？此操作不可撤销。",
+        "confirmMove": "确认移动",
+        "confirmMoveMessage": "确定要移动选中的项目吗？",
+        "noFilesSelected": "未选择任何文件",
+        "operationCancelled": "操作已取消",
+        "operationCompleted": "操作完成",
+        "processing": "处理中...",
+        "taskCompleted": "任务完成",
+        "taskFailed": "任务失败",
+        "offlineDownloadStarted": "离线下载已开始",
+        "invalidUrl": "无效的 URL",
+        "urlRequired": "请输入 URL",
+        "folderNameRequired": "请输入文件夹名称",
+        "invalidFolderName": "无效的文件夹名称",
+        "folderExists": "文件夹已存在",
+        "selectTargetFolder": "请选择目标文件夹",
+        "cannotMoveToSameLocation": "无法移动到相同位置",
+        "cannotMoveToSubfolder": "无法移动到子文件夹",
+        "serverUrlSaved": "✅ 服务器地址已保存",
+        "testingConnection": "正在测试连接...",
         "configFirst": "请先配置服务器地址、用户名和密码"
     },
     

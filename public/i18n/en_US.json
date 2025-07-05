@@ -25,39 +25,22 @@
     "embed": "Embed to Note",
     
     "settings": {
-        "serverUrl": {
-            "title": "AList Server URL",
-            "description": "Complete address of the AList server, e.g.: http://localhost:5244"
-        },
-        "username": {
-            "title": "Username",
-            "description": "AList login username"
-        },
-        "password": {
-            "title": "Password",
-            "description": "AList login password"
-        },
-        "rootPath": {
-            "title": "Root Path",
-            "description": "Root path for AList file browsing, defaults to root directory"
-        },
-        "autoLogin": {
-            "title": "Auto Login",
-            "description": "Automatically login to AList server on startup"
-        },
-        "testConnection": {
-            "title": "Test Connection",
-            "description": "Test connection to AList server",
-            "label": "Test Connection"
-        },
-        "lastPath": {
-            "title": "Last Visited Path",
-            "description": "Remember the last visited folder path to restore position on next open"
-        },
-        "usage": {
-            "title": "Usage Instructions",
-            "description": "After configuration, the AList file browser will be displayed in the sidebar. Please ensure the AList server is running and network connection is normal."
-        }
+        "serverUrl": "AList Server URL",
+        "serverUrlDesc": "Complete address of AList server, e.g.: http://localhost:5244",
+        "username": "Username",
+        "usernameDesc": "AList login username",
+        "password": "Password",
+        "passwordDesc": "AList login password",
+        "rootPath": "Root Path",
+        "rootPathDesc": "Root path for AList file browsing, default is root directory",
+        "autoLogin": "Auto Login",
+        "autoLoginDesc": "Automatically login to AList server on startup",
+        "testConnection": "Test Connection",
+        "testConnectionDesc": "Test connection to AList server",
+        "lastPath": "Last Visited Path",
+        "lastPathDesc": "Record last visited folder path for restoration on next open",
+        "usageInstructions": "Usage Instructions",
+        "usageInstructionsDesc": "After configuration, AList file browser will be displayed in the sidebar. Please ensure AList server is running and network connection is normal."
     },
     
     "errors": {
@@ -90,10 +73,52 @@
     },
     
     "messages": {
-        "serverUrlSaved": "✅ Server URL saved",
-        "testingConnection": "Testing connection...",
+        "loginSuccess": "Login successful",
+        "loginFailed": "Login failed",
+        "connectionTest": "Connection test",
         "connectionSuccess": "Connection successful!",
         "connectionFailed": "Connection failed: Invalid response",
+        "uploadSuccess": "Upload successful",
+        "uploadFailed": "Upload failed",
+        "deleteSuccess": "Delete successful",
+        "deleteFailed": "Delete failed",
+        "renameSuccess": "Rename successful",
+        "renameFailed": "Rename failed",
+        "moveSuccess": "Move successful",
+        "moveFailed": "Move failed",
+        "createFolderSuccess": "Folder created successfully",
+        "createFolderFailed": "Failed to create folder",
+        "downloadStarted": "Download started",
+        "downloadFailed": "Download failed",
+        "previewNotSupported": "Preview not supported for this file type",
+        "fileNotFound": "File not found",
+        "permissionDenied": "Permission denied",
+        "networkError": "Network error",
+        "serverError": "Server error",
+        "unknownError": "Unknown error",
+        "pleaseSelectFile": "Please select a file",
+        "pleaseSelectFolder": "Please select a folder",
+        "confirmDelete": "Confirm Delete",
+        "confirmDeleteMessage": "Are you sure you want to delete the selected items? This action cannot be undone.",
+        "confirmMove": "Confirm Move",
+        "confirmMoveMessage": "Are you sure you want to move the selected items?",
+        "noFilesSelected": "No files selected",
+        "operationCancelled": "Operation cancelled",
+        "operationCompleted": "Operation completed",
+        "processing": "Processing...",
+        "taskCompleted": "Task completed",
+        "taskFailed": "Task failed",
+        "offlineDownloadStarted": "Offline download started",
+        "invalidUrl": "Invalid URL",
+        "urlRequired": "Please enter URL",
+        "folderNameRequired": "Please enter folder name",
+        "invalidFolderName": "Invalid folder name",
+        "folderExists": "Folder already exists",
+        "selectTargetFolder": "Please select target folder",
+        "cannotMoveToSameLocation": "Cannot move to same location",
+        "cannotMoveToSubfolder": "Cannot move to subfolder",
+        "serverUrlSaved": "✅ Server URL saved",
+        "testingConnection": "Testing connection...",
         "configFirst": "Please configure server URL, username and password first"
     },
     

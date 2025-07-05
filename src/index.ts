@@ -59,7 +59,7 @@ export default class PluginSample extends Plugin {
                 position: "RightTop",
                 size: { width: 300, height: 0 },
                 icon: "iconFolder",
-                title: "AList File Browser",
+                title: this.i18n.title,
                 hotkey: "⌥⌘A",
             },
             data: {
@@ -92,19 +92,19 @@ export default class PluginSample extends Plugin {
             key: "serverUrl",
             value: "http://localhost:5244",
             type: "textinput",
-            title: "AList Server URL",
-            description: "Complete address of AList server, e.g.: http://localhost:5244",
+            title: this.i18n.settings.serverUrl,
+            description: this.i18n.settings.serverUrlDesc,
             action: {
                 callback: async () => {
                     let value = await this.settingUtils.takeAndSave("serverUrl");
                     // URL 验证
                     if (value && !this.validateServerUrl(value)) {
-                        showMessage("⚠️ Invalid server URL format, please enter a valid URL (e.g.: http://localhost:5244)", 3000, "error");
+                        showMessage(this.i18n.messages.invalidServerUrl, 3000, "error");
                         return;
                     }
                     console.log("Server URL:", value);
                     if (value) {
-                        showMessage("✅ Server URL saved", 2000, "info");
+                        showMessage(this.i18n.messages.serverUrlSaved, 2000, "info");
                     }
                 }
             }
@@ -113,8 +113,8 @@ export default class PluginSample extends Plugin {
             key: "username",
             value: "",
             type: "textinput",
-            title: "Username",
-            description: "AList login username",
+            title: this.i18n.settings.username,
+            description: this.i18n.settings.usernameDesc,
             action: {
                 callback: () => {
                     let value = this.settingUtils.takeAndSave("username");
@@ -126,8 +126,8 @@ export default class PluginSample extends Plugin {
             key: "password",
             value: "",
             type: "textinput",
-            title: "Password",
-            description: "AList login password",
+            title: this.i18n.settings.password,
+            description: this.i18n.settings.passwordDesc,
             action: {
                 callback: () => {
                     let value = this.settingUtils.takeAndSave("password");
@@ -139,8 +139,8 @@ export default class PluginSample extends Plugin {
             key: "rootPath",
             value: "/",
             type: "textinput",
-            title: "Root Path",
-            description: "Root path for AList file browsing, default is root directory",
+            title: this.i18n.settings.rootPath,
+            description: this.i18n.settings.rootPathDesc,
             placeholder: "/",
             action: {
                 callback: () => {
@@ -153,8 +153,8 @@ export default class PluginSample extends Plugin {
             key: "autoLogin",
             value: true,
             type: "checkbox",
-            title: "Auto Login",
-            description: "Automatically login to AList server on startup",
+            title: this.i18n.settings.autoLogin,
+            description: this.i18n.settings.autoLoginDesc,
             action: {
                 callback: () => {
                     let value = !this.settingUtils.get("autoLogin");
@@ -167,10 +167,10 @@ export default class PluginSample extends Plugin {
             key: "testConnection",
             value: "",
             type: "button",
-            title: "Test Connection",
-            description: "Test connection to AList server",
+            title: this.i18n.settings.testConnection,
+            description: this.i18n.settings.testConnectionDesc,
             button: {
-                label: "Test Connection",
+                label: this.i18n.settings.testConnection,
                 callback: () => {
                     this.testAListConnection();
                 }
@@ -182,8 +182,8 @@ export default class PluginSample extends Plugin {
             key: "lastPath",
             value: "/",
             type: "textinput",
-            title: "Last Visited Path",
-            description: "Record last visited folder path for restoration on next open",
+            title: this.i18n.settings.lastPath,
+            description: this.i18n.settings.lastPathDesc,
             action: {
                 callback: () => {
                     let value = this.settingUtils.takeAndSave("lastPath");
@@ -196,8 +196,8 @@ export default class PluginSample extends Plugin {
             key: "hint",
             value: "",
             type: "hint",
-            title: "Usage Instructions",
-            description: "After configuration, AList file browser will be displayed in the sidebar. Please ensure AList server is running and network connection is normal.",
+            title: this.i18n.settings.usageInstructions,
+            description: this.i18n.settings.usageInstructionsDesc,
         });
 
         try {
