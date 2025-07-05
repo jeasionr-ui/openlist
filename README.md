@@ -206,90 +206,90 @@ If this plugin helps you, welcome to support the developer:
 - 🌐 **Translation Contribution**: Assist with multi-language localization
 - 💻 **Code Contribution**: Submit feature improvements or fixes
 
-## 📋 更新日志
+## 📋 Changelog
 
 ### 🎉 v1.0.0 (2025-01-05)
-- ✨ **核心功能**：完整的文件浏览和管理功能
-- 🔗 **服务器集成**：AList 服务器深度集成支持
-- 👀 **文件预览**：多种文件类型预览支持
-- 📦 **批量操作**：批量文件操作功能
-- 🎨 **界面优化**：现代化用户界面设计
-- 🌍 **多语言**：中英文界面支持
+- ✨ **Core Features**: Complete file browsing and management functionality
+- 🔗 **Server Integration**: Deep integration support for AList server
+- 👀 **File Preview**: Multi-format file type preview support
+- 📦 **Batch Operations**: Batch file operation functionality
+- 🎨 **Interface Optimization**: Modern user interface design
+- 🌍 **Multi-language**: Chinese and English interface support
 
-## 🛣️ 开发路线图
+## 🛣️ Roadmap
 
-### 🔄 v1.1.0 (计划中)
-- 🔧 修复缓存刷新问题
-- ⚡ 自动刷新机制优化
-- 🎯 文件操作体验改进
+### 🔄 v1.1.0 (Planned)
+- 🔧 Fix cache refresh issues
+- ⚡ Auto-refresh mechanism optimization
+- 🎯 File operation experience improvements
 
-### 🚀 v1.2.0 (规划中)
-- 🌐 更多语言支持
-- 📱 移动端体验优化
-- 🔍 高级搜索功能
-- 🎨 主题定制支持
+### 🚀 v1.2.0 (Planned)
+- 🌐 More language support
+- 📱 Mobile experience optimization
+- 🔍 Advanced search functionality
+- 🎨 Theme customization support
 
-## 📚 常见问题 (FAQ)
+## 📚 Frequently Asked Questions (FAQ)
 
 <details>
-<summary><strong>Q: 为什么上传文件后不立即显示？</strong></summary>
+<summary><strong>Q: Why don't files display immediately after upload?</strong></summary>
 
-**A:** 这是由于 AList 服务器的缓存机制导致的。解决方案：
-- 🔄 点击界面上的刷新按钮
-- ⏱️ 等待 5-10 秒后自动刷新
-- 🔧 我们正在开发自动刷新功能来解决此问题
+**A:** This is caused by AList server's caching mechanism. Solutions:
+- 🔄 Click the refresh button on the interface
+- ⏱️ Wait 5-10 seconds for automatic refresh
+- 🔧 We are developing auto-refresh functionality to resolve this issue
 </details>
 
 <details>
-<summary><strong>Q: 移动文件后为什么原位置还显示文件？</strong></summary>
+<summary><strong>Q: Why do files still show in original location after moving?</strong></summary>
 
-**A:** 同样是缓存机制问题。解决方案：
-- 🔄 关闭侧边栏功能组，重新打开
-- 🖱️ 点击刷新按钮更新文件列表
-- ⚡ 即将推出的版本将自动处理此问题
+**A:** This is also a caching mechanism issue. Solutions:
+- 🔄 Close and reopen the sidebar function group
+- 🖱️ Click refresh button to update file list
+- ⚡ Upcoming versions will automatically handle this issue
 </details>
 
 <details>
-<summary><strong>Q: 插件支持哪些文件操作？</strong></summary>
+<summary><strong>Q: What file operations does the plugin support?</strong></summary>
 
-**A:** 支持完整的文件管理操作：
-- 文件：上传、下载、删除、重命名、移动、预览
-- 文件夹：创建、删除、重命名、移动
-- 批量操作：多选文件进行批量处理
+**A:** Supports complete file management operations:
+- Files: upload, download, delete, rename, move, preview
+- Folders: create, delete, rename, move
+- Batch operations: multi-select files for batch processing
 </details>
 
 <details>
-<summary><strong>Q: 如何报告问题或建议功能？</strong></summary>
+<summary><strong>Q: How to report issues or suggest features?</strong></summary>
 
-**A:** 您可以通过以下方式联系我们：
-- 在 [GitHub Issues](https://github.com/jeasionr-ui/openlist/issues) 提交问题
-- 发送邮件至 [jeasionr@foxmail.com](mailto:jeasionr@foxmail.com)
-- 我们会及时回复并处理您的反馈
+**A:** You can contact us through the following ways:
+- Submit issues on [GitHub Issues](https://github.com/jeasionr-ui/openlist/issues)
+- Send email to [jeasionr@foxmail.com](mailto:jeasionr@foxmail.com)
+- We will respond and handle your feedback promptly
 </details>
 
 <details>
-<summary><strong>Q: 插件是否支持多个 AList 服务器？</strong></summary>
+<summary><strong>Q: Does the plugin support multiple AList servers?</strong></summary>
 
-**A:** 当前版本仅支持单个 AList 服务器连接。多服务器支持功能已列入开发计划，将在后续版本中提供。
+**A:** The current version only supports single AList server connection. Multi-server support functionality has been included in the development plan and will be provided in future versions.
 </details>
 
 <details>
-<summary><strong>Q: 文件上传有大小限制吗？</strong></summary>
+<summary><strong>Q: Are there file upload size limitations?</strong></summary>
 
-**A:** 上传限制主要取决于以下因素：
-- 🖥️ **AList 服务器配置**：查看服务器的上传大小限制
-- 🌐 **网络环境**：建议大文件使用稳定网络上传
-- 💾 **存储空间**：确保目标目录有足够存储空间
-- 📊 **建议**：单文件建议不超过 2GB，以获得最佳体验
+**A:** Upload limitations mainly depend on the following factors:
+- 🖥️ **AList Server Configuration**: Check server's upload size limitations
+- 🌐 **Network Environment**: Recommend using stable network for large file uploads
+- 💾 **Storage Space**: Ensure target directory has sufficient storage space
+- 📊 **Recommendation**: Single file recommended not to exceed 2GB for optimal experience
 </details>
 
 <details>
-<summary><strong>Q: 如何提高文件传输速度？</strong></summary>
+<summary><strong>Q: How to improve file transfer speed?</strong></summary>
 
-**A:** 优化传输速度的方法：
-- 🌐 **网络优化**：使用有线网络或稳定的 WiFi
-- 📦 **分批上传**：大量文件建议分批次上传
-- 🔧 **服务器优化**：确保 AList 服务器性能良好
-- ⚡ **并发控制**：避免同时进行过多文件操作
+**A:** Methods to optimize transfer speed:
+- 🌐 **Network Optimization**: Use wired network or stable WiFi
+- 📦 **Batch Upload**: Recommend uploading large numbers of files in batches
+- 🔧 **Server Optimization**: Ensure AList server performance is good
+- ⚡ **Concurrency Control**: Avoid too many simultaneous file operations
 </details>
 
