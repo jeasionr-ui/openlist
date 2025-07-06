@@ -60,10 +60,6 @@ jobs:
       - name: Build for production
         run: pnpm build
 
-      # Rename alist.zip to package.zip for SiYuan marketplace
-      - name: Rename zip file
-        run: mv alist.zip package.zip
-
       # Extract version from tag
       - name: Extract version
         id: extract_version
