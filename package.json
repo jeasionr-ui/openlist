@@ -2,10 +2,10 @@
   "name": "openlist",
   "version": "1.0.0",
   "type": "module",
-  "description": "AList 文件浏览器插件 - 在思源笔记中集成 AList 文件管理功能，支持文件预览、上传下载等操作。",
-  "repository": "https://github.com/joe/openlist",
+  "description": "AList(OpenList) 文件浏览器插件 - 在思源笔记中集成 AList 文件管理功能，支持文件预览、上传下载等操作。",
+  "repository": "https://github.com/jeasionr-ui/openlist",
   "homepage": "",
-  "author": "joe",
+  "author": "jeasionr-ui",
   "license": "GPL-3.0",
   "scripts": {
     "dev": "cross-env NODE_ENV=development VITE_SOURCEMAP=inline vite build --watch",

@@ -38,7 +38,10 @@ export default defineConfig({
                 { src: "./README*.md", dest: "./" },
                 { src: "./plugin.json", dest: "./" },
                 { src: "./preview.png", dest: "./" },
-                { src: "./icon.png", dest: "./" }
+                { src: "./icon.png", dest: "./" },
+                { src: "./AliPay.JPG", dest: "./" },
+                { src: "./WeChat.JPG", dest: "./" },
+                { src: "./SOL.JPG", dest: "./" }
             ],
         }),
 
@@ -86,7 +89,7 @@ export default defineConfig({
                     zipPack({
                         inDir: './dist',
                         outDir: './',
-                        outFileName: 'alist.zip',
+                        outFileName: 'package.zip',
                         pathPrefix: ''
                     })
                 ])
